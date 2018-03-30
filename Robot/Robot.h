@@ -20,19 +20,18 @@
 
 // For SetMotorSpeed function to convert speed in rad/s to duty cycle (PWM)
 // PWM = A*speed + B
-#define ESCON_CALIBR_COEF_A                0.0293824f
+#define ESCON_CALIBR_COEF_A                0.014993288f
 #define ESCON_CALIBR_COEF_B                0.1f
 
 
 // Minimum and maximum speed of motor/wheel in rad/s 
 // (it corresponds to maximum duty cycle and minimum duty cycle)
-#define MAX_ROT_SPEED                      27.22713f
+#define MAX_ROT_SPEED                      53.3572085f
 #define MIN_ROT_SPEED                      0.0f
 #define EPS_OF_ROT_SPEED                   0.004f
 
 // Parameters of motors
-// Gear ratios 
-#define MAXON_MOTOR_SHORT_GR               26.0f
+// Gear ratio
 #define MAXON_MOTOR_LONG_GR                21.0f
 
 // Encoder's ticks per one rotation of initial shaft
@@ -40,18 +39,16 @@
 
 // Total number of ticks per one rotation
 #define MAXON_MOTOR_LONG_TOTAL_TICKS       MAXON_MOTOR_LONG_GR * MAXON_MOTOR_ENC_TICKS
-#define MAXON_MOTOR_SHORT_TOTAL_TICKS      MAXON_MOTOR_SHORT_GR * MAXON_MOTOR_ENC_TICKS
 
 // Ticks to speed (rad/s) coefficient 
 #define TICKS_TO_SPEED_COEF_LONG           2*PI_NUMBER / (MAXON_MOTOR_LONG_TOTAL_TICKS * MOTOR_CONTROL_PERIOD)
-#define TICKS_TO_SPEED_COEF_SHORT          2*PI_NUMBER / (MAXON_MOTOR_SHORT_TOTAL_TICKS * MOTOR_CONTROL_PERIOD)
 
 //--------------------------------------------- Definitions and typedefs for robot movement --------------------//
 
 #define MOVEMENT_ANGULAR_ACCURACY          0.0087266f // 0.5°
 #define MOVEMENT_XY_ACCURACY               0.0005f    // 0.5 mm
-#define ODOMETRY_MOVEMENT_ACCELERATION_X   1.5f       // 1.5 m/s^2
-#define ODOMETRY_MOVEMENT_ACCELERATION_Y   0.5f       // 0.5 m/s^2
+#define ODOMETRY_MOVEMENT_ACCELERATION_X   2.0f       // 2.0 m/s^2
+#define ODOMETRY_MOVEMENT_ACCELERATION_Y   2.0f       // 2.0 m/s^2
 #define ODOMETRY_MOVEMENT_ACCELERATION_W   6.0f       // 3 rad/s^2
 
 typedef enum
@@ -82,6 +79,7 @@ typedef struct
 	uint8_t movingStatusFlag;
 	uint8_t forwardKinCalcStatusFlag;
 	uint8_t odometryMovingStatusFlag;
+	uint8_t startupInterruptStatusFlag;
 }RobotStatus;
 
 // For setMotorSpeed function

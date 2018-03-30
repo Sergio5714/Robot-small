@@ -8,32 +8,31 @@
 extern RobotStatus Robot;
 extern I2C_Module_With_State_Typedef I2CModule;
 
+
 extern uint32_t timeMilliseconds;
 extern uint32_t timeOfLastI2CResetMillis;
+
 
 uint32_t numberOfReceivedPackages;
 uint32_t numberOfChecksumErrors;
 uint32_t numberOfSmallLengthErrors;
 
+uint8_t values;
+
 uint8_t range;
 uint8_t rangeRaw;
 
-uint8_t values = 0;
-uint8_t state;
 
-int main()
-
+int main(void)
 {		
-
-	state = 0;
    	boardInitAll();
 	initManipulators();
-	Robot.forwardKinCalcStatusFlag = 0x00;
+	Robot.forwardKinCalcStatusFlag = 0x01;
 	
 	//initAllRangefinders();
 	//rangeFinderInitContiniousInterruptMode(RANGEFINDER_DEFAULT_ADDR);
 	//startContiniousMeasurements(RANGEFINDER_DEFAULT_ADDR);
-	
+
 	while (1)
 	{
 		switch(getPackage())
@@ -50,18 +49,5 @@ int main()
 				break;
 		};
 		checkCommandAndExecute();
-//		if (timeMilliseconds - timeOfLastI2CResetMillis > 1000)
-//		{
-//			readMeasuredRange(RANGEFINDER_DEFAULT_ADDR , &range);
-//		}
-//		initAllRangefinders();
-//		if (state)
-//		{
-//			initAllRangefinders();
-//			state = 0;
-//		}
-//		I2CCheckBus(&I2CModule);
-		
-		//I2CSearch(&I2CModule);
 	}
 }

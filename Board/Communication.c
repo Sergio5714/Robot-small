@@ -96,6 +96,7 @@ Typedef_Protocol_Error getPackage()
 		}
 	}
 	comReceiveBufferStart = ptr;
+
 	return WAIT_MODE;
 }
 

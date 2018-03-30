@@ -7,9 +7,8 @@ RobotStatus Robot;
 OdometryMovementStruct OdometryMovement;
 
 // Values, calculated by using encoder's data
-// Speeds (rad/s) and coordinates (rad) of particular wheel
+// Speeds (rad/s) of particular wheel
 float wheelsSpeed[ROBOT_NUMBER_OF_MOTORS];
-float wheelsCoord[ROBOT_NUMBER_OF_MOTORS];
 
 // Instantaneous speeds and coordinates of robot in global coordinate system
 float robotSpeedCsGlobal[3];
@@ -79,18 +78,9 @@ void readEnc(void)
 	for (i = 0x00; i < ROBOT_NUMBER_OF_MOTORS; i++)
 	{
 		// Actually now it is only motor's speed, but not wheel speed
-		wheelsSpeed[i] = encTicksBuf[i] * TICKS_TO_SPEED_COEF_SHORT;
-		// Now one motor (1st and 4rd) is especial (20.02.2018)
-		if ((i == 0) || (i == 3))
-		{
-			wheelsSpeed[i] = encTicksBuf[i] * TICKS_TO_SPEED_COEF_LONG;	
-		}
+		wheelsSpeed[i] = encTicksBuf[i] * TICKS_TO_SPEED_COEF_LONG;
 	}
 	#endif
-	
-	// Inverse motors 2 and 3 because of cylindrical transmission (Positive direction is CCW)
-	wheelsSpeed[1] = - wheelsSpeed[1];
-	wheelsSpeed[2] = - wheelsSpeed[2];
 	
 	// Calculate distance that wheel passed
 	for (i = 0x00; i < ROBOT_NUMBER_OF_MOTORS; i++)
