@@ -3,6 +3,7 @@
 #include "Communication.h"
 #include "Manipulators.h"
 #include "Collision_avoidance.h"
+#include "Shooter_motors.h"
 
 
 extern RobotStatus Robot;
@@ -28,6 +29,8 @@ int main(void)
    	boardInitAll();
 	initManipulators();
 	Robot.forwardKinCalcStatusFlag = 0x01;
+	pidInit();
+	
 	
 	//initAllRangefinders();
 	//rangeFinderInitContiniousInterruptMode(RANGEFINDER_DEFAULT_ADDR);

@@ -220,14 +220,14 @@ ErrorStatus rangeFinderCheckInterruptStatusOfSensor(uint8_t addr, uint8_t* answe
 }
 
 // Return Status
-static ErrorStatus rangeFinderGetStatusOfSensor(uint8_t addr, uint8_t* value)
-{
-	if(rangeFinderReadReg(RESULT_RANGE_STATUS, value, addr)!= SUCCESS)
-	{
-		return ERROR;
-	}
-	return SUCCESS;
-}
+//static ErrorStatus rangeFinderGetStatusOfSensor(uint8_t addr, uint8_t* value)
+//{
+//	if(rangeFinderReadReg(RESULT_RANGE_STATUS, value, addr)!= SUCCESS)
+//	{
+//		return ERROR;
+//	}
+//	return SUCCESS;
+//}
 
 // Single shot measurement
 ErrorStatus rangeFinderSingleShotMeasurement(uint8_t addr, uint8_t* value)

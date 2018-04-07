@@ -11,6 +11,11 @@ extern float robotCoordCs1[3];
 extern float robotCoordCsGlobal[3];
 extern float accelerationMax[3];
 extern Cube_Manipulator_Typedef cubeManipulators[NUMBER_OF_MANIPULATORS];
+extern Sorter_Manipulator_Typedef sorterManipulators[NUMBER_OF_SORTERS];
+
+extern float shooterMotorSpeed;
+extern Pid_Regulator_Struct_Typedef pidRegulator;
+extern Chosen_Motor_Typedef chosenShooter;
 
 enum
 {
@@ -48,6 +53,12 @@ enum
 	
 	ODOMETRY_MOVEMENT             = 0xA2,
 	
+	GET_SORTER_STATUS             = 0xC0,
+	MOVE_LATCH_OF_SORTER          = 0xC1,
+	MOVE_TOP_SORTER               = 0xC2,
+	MOVE_BOTTOM_SORTER            = 0xC3,
+	TURN_ON_AND_OFF_MOTORS        = 0xC4,
+	GET_SHOOTER_MOTOR_SPEED       = 0xC5
 };
 
 void checkCommandAndExecute(void);

@@ -361,7 +361,150 @@ void checkCommandAndExecute()
 			sendAnswer(inputCommand.command, answer, 0x02);
 			break;
 		}
+		case GET_SORTER_STATUS:
+		{
+			// Check if no params have been received
+			if (inputCommand.numberOfreceivedParams != 0x00)
+				break;
+			uint8_t buf = sorterManipulators[0].subtasksExecutorStatusFlag; 
+			// Send status of manipulator
+			sendAnswer(inputCommand.command, (uint8_t*)&buf, 0x01);
+			break;
+		}
+		case MOVE_LATCH_OF_SORTER:
+		{
+			// Check if mode is received
+			if (inputCommand.numberOfreceivedParams != 0x01)
+				break;
+			uint8_t mode = inputCommand.params[0];
+			if (mode)
+			{
+				setSorterHighLevelCommand(OPEN_LATCH, 0x00, &sorterManipulators[0]);
+			}
+			else
+			{
+				setSorterHighLevelCommand(CLOSE_LATCH, 0x00, &sorterManipulators[0]);
+			}
+			// Send answer
+			uint8_t* answer = (uint8_t*)&"OK";
+			sendAnswer(inputCommand.command, answer, 0x02);
+			break;
+		}
+		case MOVE_TOP_SORTER:
+		{
+			// Check if number of position is received
+			if (inputCommand.numberOfreceivedParams != 0x01)
+				break;
+			uint8_t numberOfPos = inputCommand.params[0];
+			switch(numberOfPos)
+			{
+				case 0x00:
+				{
+					setSorterHighLevelCommand(TOP_SORT_GOOD_BALL, 0x00, &sorterManipulators[0]);
+					break;
+				}
+				case 0x01:
+				{
+					setSorterHighLevelCommand(TOP_SORT_BAD_BALL, 0x00, &sorterManipulators[0]);
+					break;
+				}
+				case 0x02:
+				{
+					setSorterHighLevelCommand(TOP_SORT_GO_TO_INTERM, 0x00, &sorterManipulators[0]);
+					break;
+				}
+				default:
+				break;
+			}
+			// Send answer
+			uint8_t* answer = (uint8_t*)&"OK";
+			sendAnswer(inputCommand.command, answer, 0x02);
+			break;
+		}
+		case MOVE_BOTTOM_SORTER:
+		{
+			// Check if number of position is received
+			if (inputCommand.numberOfreceivedParams != 0x01)
+				break;
+			uint8_t numberOfPos = inputCommand.params[0];
+			switch(numberOfPos)
+			{
+				case 0x00:
+				{
+					setSorterHighLevelCommand(BOTTOM_SORT_BALL_TO_LEFT, 0x00, &sorterManipulators[0]);
+					break;
+				}
+				case 0x01:
+				{
+					setSorterHighLevelCommand(BOTTOM_SORT_BALL_TO_RIGHT, 0x00, &sorterManipulators[0]);
+					break;
+				}
+				case 0x02:
+				{
+					setSorterHighLevelCommand(BOTTOM_SORT_GO_TO_INTERM, 0x00, &sorterManipulators[0]);
+					break;
+				}
+				case 0x03:
+				{
+					setSorterHighLevelCommand(BOTTOM_SORT_RELEASE_BALL_TO_LEFT, 0x00, &sorterManipulators[0]);
+					break;
+				}
+				case 0x04:
+				{
+					setSorterHighLevelCommand(BOTTOM_SORT_RELEASE_BALL_TO_RIGHT, 0x00, &sorterManipulators[0]);
+					break;	
+				}
+				default:
+				break;
+			}
+			// Send answer
+			uint8_t* answer = (uint8_t*)&"OK";
+			sendAnswer(inputCommand.command, answer, 0x02);
+			break;
+		}
+		case TURN_ON_AND_OFF_MOTORS:
+		{
+			// Check if side(left(0) or right(1), mode on(1) or off (0)) is received
+			if (inputCommand.numberOfreceivedParams != 0x02)
+				break;
+			// Choose motor
+			if (inputCommand.params[0] == 0x00)
+			{
+				chosenShooter = CHOSEN_MOTOR_FIRST;
+			}
+			else if (inputCommand.params[0] == 0x01)
+			{
+				chosenShooter = CHOSEN_MOTOR_SECOND;
+			}
+			// Choose mode
+			if (inputCommand.params[1] == 0x00)
+			{
+				// turn off motor
+				pidRegulator.target = 0.00;
+			}
+			else if (inputCommand.params[1] == 0x01)
+			{
+				// Set target speed
+				pidRegulator.target = SHOOTER_MOTOR_SPEED_TO_SHOOT;
+				// Turn on PID
+				pidRegulator.pidOn = 0x01;
+			}
+			// Send answer
+			uint8_t* answer = (uint8_t*)&"OK";
+			sendAnswer(inputCommand.command, answer, 0x02);
+			break;
+		}
+		case GET_SHOOTER_MOTOR_SPEED:
+		{
+			if (inputCommand.numberOfreceivedParams != 0x00)
+				break;
+			float buf  = shooterMotorSpeed;
+			// send answer
+			sendAnswer(inputCommand.command, (uint8_t*)&buf, 0x04);
+			break;
+		}
 	}
+
 	// Command is already executed
 	inputCommand.status = 0x00;
 	return;

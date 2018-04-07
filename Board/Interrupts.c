@@ -1,6 +1,8 @@
 #include "Interrupts.h"
 extern RobotStatus Robot;
 extern I2C_Module_With_State_Typedef I2CModule;
+extern Pid_Regulator_Struct_Typedef pidRegulator;
+extern Chosen_Motor_Typedef chosenShooter;
 
 // Local time of Robot's operation in ms
 uint32_t timeMilliseconds = 0x00;
@@ -48,6 +50,37 @@ void TIM6_DAC_IRQHandler(void)
 			// Set speeds for motors (robotTargetMotorSpeedCs1 -> PWM)
 			setMotorSpeeds();
 		}
+		// Calculate speed of shooter motor
+		shooterReadEnc();
+		// Calculate pid
+		pidCalc(&pidRegulator);
+		// Set duty cycle
+		shooterSetdutyCycle(chosenShooter, pidRegulator.output);
+	}
+	return;
+}
+
+// Interrupt handler for software PWM for shooter motors
+void TIM8_BRK_TIM12_IRQHandler(void)
+{
+	if (SHOOTER_MOTOR_PWM_TIM_MODULE->SR & TIM_SR_UIF)
+	{
+		timClearStatusRegisterFlag(SHOOTER_MOTOR_PWM_TIM_MODULE, TIM_SR_UIF);
+		// Set high level
+		gpioPinSetLevel(SHOOTER_MOTOR_CH1_PWM_PORT, SHOOTER_MOTOR_CH1_PWM_PIN, GPIO_LEVEL_HIGH);
+		gpioPinSetLevel(SHOOTER_MOTOR_CH2_PWM_PORT, SHOOTER_MOTOR_CH2_PWM_PIN, GPIO_LEVEL_HIGH);
+	}
+	if (SHOOTER_MOTOR_PWM_TIM_MODULE->SR & TIM_SR_CC1IF)
+	{
+		timClearStatusRegisterFlag(SHOOTER_MOTOR_PWM_TIM_MODULE, TIM_SR_CC1IF);
+		// Set low level on ch1
+		gpioPinSetLevel(SHOOTER_MOTOR_CH1_PWM_PORT, SHOOTER_MOTOR_CH1_PWM_PIN, GPIO_LEVEL_LOW);
+	}
+	if (SHOOTER_MOTOR_PWM_TIM_MODULE->SR & TIM_SR_CC2IF)
+	{
+		timClearStatusRegisterFlag(SHOOTER_MOTOR_PWM_TIM_MODULE, TIM_SR_CC2IF);
+		// Set low level on ch1
+		gpioPinSetLevel(SHOOTER_MOTOR_CH2_PWM_PORT, SHOOTER_MOTOR_CH2_PWM_PIN, GPIO_LEVEL_LOW);
 	}
 	return;
 }
@@ -143,4 +176,13 @@ uint8_t checkTimeout(uint32_t startTime, uint32_t timeout)
 			return 0x00;	
 		}
 	}
+}
+void delayMs(uint16_t delay)
+{
+	uint32_t startTime = getLocalTime();
+	while(!checkTimeout(startTime, delay))
+	{
+		
+	}
+	return;
 }

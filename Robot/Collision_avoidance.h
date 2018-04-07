@@ -3,8 +3,14 @@
 
 #include "STM32F4_I2C.h"
 #include "VL6180x.h"
+#include "Interrupts.h"
+//--------------------------------------------- Macros for proximity sensor ------------------------------------//
+#define RANGE_FINDER_RESET_DELAY_MS                0x01
+#define RANGE_FINDER_INITIAL_ADDR_TO_SETUP         RANGEFINDER_DEFAULT_ADDR + 0x01
+//--------------------------------------------- Macros for expander -------------_------------------------------//
+#define EXPANDER_INTERRUPT_I2C_ADDRESS             0x20
+#define EXPANDER_RESET_I2C_ADDRESS                 0x21
 
-#define EXPANDER_I2C_ADDRESS                       0x20
 #define EXPANDER_REG_DIR_A                         0x00
 #define EXPANDER_REG_DIR_B                         0x10
 #define EXPANDER_REG_VALUE_A                       0x0A
@@ -20,8 +26,18 @@
 //INTERRUPT CAPTURED VALUE FOR PORT REGISTER
 #define EXPANDER_REG_INT_CAP_VAL_A                 0x08
 #define EXPANDER_REG_INT_CAP_VAL_B                 0x18 
-
 //--------------------------------------------- High level functions -------------------------------------------//
+
+// Global initialization
+ErrorStatus initRangefindersGlobally(void);
+
+// Reset particular rangefinder
+ErrorStatus resetRangeFinder(uint8_t numberOfSensor);
+
+// Init particular rangefinder
+ErrorStatus initRangeFinder(uint8_t numberOfSensor);
+
+//--------------------------------------------- Middle level functions -----------------------------------------//
 
 // Initialize expander in output mode
 ErrorStatus initExpanderOutputMode(uint8_t expanderAddr);

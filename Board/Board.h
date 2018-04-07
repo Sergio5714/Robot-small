@@ -33,7 +33,7 @@
 
 #define COM_USART_MODULE                 USART1
 #define COM_USART_IRQN                   USART1_IRQn
-#define COM_USART_BAUDRATE               64000
+#define COM_USART_BAUDRATE               250000
 #define COM_USART_PIN_AF                 GPIO_AF_USART1
 #define COM_USART_TX_PIN_PORT            GPIOB
 #define COM_USART_TX_PIN_NUMBER          GPIO_Pin_6
@@ -76,7 +76,16 @@
 #define ENCODER_1_PIN_AF                 GPIO_AF_TIM2
 #define ENCODER_1_CNT                    ((uint16_t *)&(ENCODER_1_TIM_MODULE->CNT))
 
-//--------------------------------------------- Motor PWM control  --------------------------------------------------//
+//--------------------------------------------- Encoders for shooter motors ----------------------------------//
+#define SHOOTER_ENCODER_TIM_MODULE       TIM5
+#define SHOOTER_ENCODER_CHA_PORT         GPIOA
+#define SHOOTER_ENCODER_CHA_PIN          GPIO_Pin_0
+#define SHOOTER_ENCODER_CHB_PORT         GPIOA
+#define SHOOTER_ENCODER_CHB_PIN          GPIO_Pin_1
+#define SHOOTER_ENCODER_PIN_AF           GPIO_AF_TIM5
+#define SHOOTER_ENCODER_CNT              ((uint16_t *)&(SHOOTER_ENCODER_TIM_MODULE->CNT))
+
+//--------------------------------------------- Motor PWM control  -------------------------------------------//
 
 // ARR = 42000, PSC = 2, fapb1 = 42 MHZ, PWM frequency = 1000 Hz
 #define MOTOR_PWM_TIM_MODULE             TIM4
@@ -113,6 +122,23 @@
 #define MOTOR_CH4_EN_PORT                GPIOE
 #define MOTOR_CH4_EN_PIN                 GPIO_Pin_14
 
+//--------------------------------------------- Shooter motor PWM control  -------------------------------------------//
+
+// ARR = 42000, PSC = 2, fapb1 = 42 MHZ, PWM frequency = 1000 Hz
+#define SHOOTER_MOTOR_PWM_TIM_MODULE     TIM12
+#define SHOOTER_MOTOR_PWM_TIM_PSC        0x02
+#define SHOOTER_MOTOR_PWM_TIM_ARR        0xA410
+#define SHOOTER_MOTOR_PWM_TIM_IRQN       TIM8_BRK_TIM12_IRQn
+
+#define SHOOTER_MOTOR_CH1_NUMBER         0x01
+#define SHOOTER_MOTOR_CH2_NUMBER         0x02
+
+#define SHOOTER_MOTOR_CH1_PWM_PORT       GPIOC
+#define SHOOTER_MOTOR_CH1_PWM_PIN        GPIO_Pin_8
+#define SHOOTER_MOTOR_CH2_PWM_PORT       GPIOC
+#define SHOOTER_MOTOR_CH2_PWM_PIN        GPIO_Pin_9
+
+
 //--------------------------------------------- Timer for motor control (100 Hz) ------------------------------------------------//
 
 // ARR = 42000, PSC = 20, fapb1 = 42 MHZ, Frequency = 100 Hz
@@ -127,10 +153,10 @@
 //--------------------------------------------- Timer for manipulators control (100 Hz) ----------------------------------------//
 
 // ARR = 42000, PSC = 20, fapb1 = 42 MHZ, Frequency = 100 Hz
-#define SERVO_CHECKER_TIM_MODULE         TIM5
+#define SERVO_CHECKER_TIM_MODULE         TIM13
 #define SERVO_CHECKER_TIM_PSC            0x14
 #define SERVO_CHECKER_TIM_ARR            0xA410
-#define SERVO_CHECKER_IRQN               TIM5_IRQn
+#define SERVO_CHECKER_IRQN               TIM8_UP_TIM13_IRQn
 #define SERVO_CHECKER_PERIOD             0.01f
 #define SERVO_CHECKER_TICKS_TO_SEC       0.00000238f
 

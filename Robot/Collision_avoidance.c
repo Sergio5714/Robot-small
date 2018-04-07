@@ -1,6 +1,63 @@
 #include "Collision_avoidance.h"
 extern I2C_Module_With_State_Typedef I2CModule;
+uint16_t outputVoltageOfExpander;
+//--------------------------------------------- High level functions -------------------------------------------//
+// Global initialization
+ErrorStatus initRangefindersGlobally(void)
+{
+	if (initExpanderOutputMode(EXPANDER_RESET_I2C_ADDRESS) != SUCCESS)
+	{
+		return ERROR;
+	}
+	if (initExpanderInterruptMode(EXPANDER_INTERRUPT_I2C_ADDRESS) != SUCCESS)
+	{
+		return ERROR;
+	}
+	if (initRangeFinder(0x00) != SUCCESS)
+	{
+		return ERROR;
+	}
+	return SUCCESS;
+}
 
+// Reset particular rangefinder
+ErrorStatus resetRangeFinder(uint8_t numberOfSensor)
+{
+	outputVoltageOfExpander &= ~(1 << numberOfSensor);
+	if (setExpanderVoltage(outputVoltageOfExpander, EXPANDER_RESET_I2C_ADDRESS) != SUCCESS)
+	{
+		return ERROR;
+	}
+	delayMs(RANGE_FINDER_RESET_DELAY_MS);
+	outputVoltageOfExpander |= (1 << numberOfSensor);
+	if (setExpanderVoltage(outputVoltageOfExpander, EXPANDER_RESET_I2C_ADDRESS) != SUCCESS)
+	{
+		return ERROR;
+	}
+	delayMs(RANGE_FINDER_RESET_DELAY_MS);
+	return SUCCESS;
+}
+// Init particular rangefinder
+ErrorStatus initRangeFinder(uint8_t numberOfSensor)
+{
+	// Reset sensor
+	if (resetRangeFinder(numberOfSensor) != SUCCESS)
+	{
+		return ERROR;
+	}
+	// Change address
+	uint8_t newAddr = RANGE_FINDER_INITIAL_ADDR_TO_SETUP + numberOfSensor;
+	if(rangeFinderChangeAddress(RANGEFINDER_DEFAULT_ADDR, newAddr)  != SUCCESS)
+	{
+		return ERROR;
+	}
+	if(rangeFinderInitContiniousInterruptLevelLowMode(newAddr, RANGEFINDER_INTERRUPT_LEVEL_LOW)  != SUCCESS)
+	{
+		return ERROR;
+	}
+	return SUCCESS;
+}
+//--------------------------------------------- Middle level functions -----------------------------------------//
 // Initialize expander in output mode
 ErrorStatus initExpanderOutputMode(uint8_t expanderAddr)
 {
@@ -97,12 +154,12 @@ ErrorStatus expanderReadInterrupt(uint8_t expanderAddr, uint16_t* interruptStatu
 	uint8_t interruptStatusB;
 	
 	// Interrupt captured value for port A
-	if (expanderReadReg(EXPANDER_REG_INT_CAP_VAL_A, &interruptStatusA, EXPANDER_I2C_ADDRESS) != SUCCESS)
+	if (expanderReadReg(EXPANDER_REG_INT_CAP_VAL_A, &interruptStatusA, expanderAddr) != SUCCESS)
 	{
 		return ERROR;
 	}
 	// Interrupt captured value for port B
-	if (expanderReadReg(EXPANDER_REG_INT_CAP_VAL_B, &interruptStatusB, EXPANDER_I2C_ADDRESS) != SUCCESS)
+	if (expanderReadReg(EXPANDER_REG_INT_CAP_VAL_B, &interruptStatusB, expanderAddr) != SUCCESS)
 	{
 		return ERROR;
 	}
@@ -120,6 +177,7 @@ ErrorStatus setExpanderVoltage(uint16_t voltage, uint8_t expanderAddr)
 	{
 		return ERROR;
 	}
+	// Output value of B bank
 	if (expanderWriteReg(EXPANDER_REG_VALUE_B, voltageB, expanderAddr) != SUCCESS)
 	{
 		return ERROR;

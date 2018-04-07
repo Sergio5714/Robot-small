@@ -1,9 +1,15 @@
 #include "Manipulators.h"
 #include "Interrupts.h"
 
+// For cube manipulators
 Cube_Manipulator_Typedef cubeManipulators[NUMBER_OF_MANIPULATORS];
-Servo_Checker_Typedef servoChecker[NUMBER_OF_MANIPULATORS];
+Servo_Checker_Typedef servoCheckerCubeManip[NUMBER_OF_MANIPULATORS];
 
+// For ball sorters
+Sorter_Manipulator_Typedef sorterManipulators[NUMBER_OF_SORTERS];
+Servo_Checker_Typedef servoCheckerSorterManip[NUMBER_OF_SORTERS];
+
+// FOR CUBE MANIPULATORS
 // Task sequence for taking a cube
 Manipulator_Subtasks_Typedef takeCubeTaskSeq[] = {SUBTASK_OPEN_MANIPULATOR, SUBTASK_LOWER_MANIPULATOR,
                                                   SUBTASK_CLOSE_MANIPULATOR, SUBTASK_LIFT_MANIPULATOR,
@@ -24,13 +30,26 @@ Manipulator_Subtasks_Typedef openDoorTaskSeq[] = {SUBTASK_OPEN_DOOR, SUBTASK_TER
 // Task sequence to close the door
 Manipulator_Subtasks_Typedef closeDoorTaskSeq[] = {SUBTASK_CLOSE_DOOR, SUBTASK_TERMINATOR};
 
-// Task sequence torelease magic cube
+// Task sequence to release magic cube
 Manipulator_Subtasks_Typedef releaseMagicCubeTaskSeq[] = {SUBTASK_PUSH_MAGIC_CUBE, SUBTASK_RETURN_MAGIC_CUBE, SUBTASK_TERMINATOR};
 
 Manipulator_Subtasks_Typedef taskTerminator = SUBTASK_TERMINATOR;
-													 
+
+// FOR SORTERS MANIPULATORS
+Sorter_Subtasks_Typedef      topSorterSortBadBallTaskSeq[]  = {SUBTASK_TOP_SORTER_SORT_BAD_BALL, SUBTASK_SORTER_TERMINATOR};
+Sorter_Subtasks_Typedef      topSorterSortGoodBallTaskSeq[] = {SUBTASK_TOP_SORTER_SORT_GOOD_BALL, SUBTASK_SORTER_TERMINATOR};
+Sorter_Subtasks_Typedef      topSorterGoToIntermTaskSeq[] = {SUBTASK_TOP_SORTER_GO_TO_INTERM_POS, SUBTASK_SORTER_TERMINATOR};
+Sorter_Subtasks_Typedef      bottomSorterSortToRightTaskSeq[] = {SUBTASK_BOTTOM_SORTER_SORT_TO_RIGHT, SUBTASK_SORTER_TERMINATOR};
+Sorter_Subtasks_Typedef      bottomSorterSortToLeftTaskSeq[] = {SUBTASK_BOTTOM_SORTER_SORT_TO_LEFT, SUBTASK_SORTER_TERMINATOR};
+Sorter_Subtasks_Typedef      bottomSorterGoToIntermTaskSeq[] = {SUBTASK_BOTTOM_SORTER_GO_TO_INTERM_POS, SUBTASK_SORTER_TERMINATOR};
+Sorter_Subtasks_Typedef      bottomSorterReleaseToLeftTaskSeq[] = {SUBTASK_BOTTOM_SORTER_RELEASE_LEFT, SUBTASK_SORTER_TERMINATOR};
+Sorter_Subtasks_Typedef      bottomSorterReleaseToRightTaskSeq[] = {SUBTASK_BOTTOM_SORTER_RELEASE_RIGHT, SUBTASK_SORTER_TERMINATOR};
+Sorter_Subtasks_Typedef      openLatchTaskSeq[] = {SUBTASK_OPEN_LATCH, SUBTASK_SORTER_TERMINATOR};
+Sorter_Subtasks_Typedef      closeLatchTaskSeq[] = {SUBTASK_CLOSE_LATCH, SUBTASK_SORTER_TERMINATOR};
+Sorter_Subtasks_Typedef      sorterTaskTerminator = SUBTASK_SORTER_TERMINATOR;
+
 // Timer interrupt handler for servoChecker
-void TIM5_IRQHandler(void)
+void TIM8_UP_TIM13_IRQHandler(void)
 {
 
 	if (SERVO_CHECKER_TIM_MODULE->SR & TIM_SR_UIF)
@@ -38,11 +57,9 @@ void TIM5_IRQHandler(void)
 		timClearStatusRegisterFlag(SERVO_CHECKER_TIM_MODULE, TIM_SR_UIF);
 		// Check manipulators
 		execManipTasks(0x00, &cubeManipulators[0]);
-		execManipTasks(0x01, &cubeManipulators[1]);
-		execManipTasks(0x02, &cubeManipulators[2]);
-		checkPosServo(&servoChecker[0]);
-		checkPosServo(&servoChecker[1]);
-		checkPosServo(&servoChecker[2]);
+		checkPosServo(&servoCheckerCubeManip[0]);
+		execSorterTasks(0x00, &sorterManipulators[0]);
+		checkPosServo(&servoCheckerSorterManip[0]);
 	}
 	return;
 }
@@ -65,29 +82,20 @@ void initManipulators(void)
 	cubeManipulators[0].magicCube.finalPosition = MANIP_LEFT_SERVO_MAGIC_CUBE_FINAL_POS;
 	cubeManipulators[0].tasksSequencePtr = &taskTerminator;
 	
-	cubeManipulators[1].gripper.id = MANIP_CENTRAL_SERVO_GRIPPER_ID;
-	cubeManipulators[1].gripper.closedAngle = MANIP_CENTRAL_SERVO_GRIPPER_CLOSED_POS;
-	cubeManipulators[1].gripper.openedAngle = MANIP_CENTRAL_SERVO_GRIPPER_OPENED_POS;
-	cubeManipulators[1].slider.id = MANIP_CENTRAL_SERVO_SLIDER_ID;
-	cubeManipulators[1].slider.botPos = MANIP_CENTRAL_SERVO_SLIDER_BOT_POS;
-	cubeManipulators[1].slider.topPos = MANIP_CENTRAL_SERVO_SLIDER_TOP_POS;
-	cubeManipulators[1].slider.intermPos = MANIP_CENTRAL_SERVO_SLIDER_INTERM_POS;
-	cubeManipulators[1].tasksSequencePtr = &taskTerminator;
-	
-	cubeManipulators[2].gripper.id = MANIP_RIGHT_SERVO_GRIPPER_ID;
-	cubeManipulators[2].gripper.closedAngle = MANIP_RIGHT_SERVO_GRIPPER_CLOSED_POS;
-	cubeManipulators[2].gripper.openedAngle = MANIP_RIGHT_SERVO_GRIPPER_OPENED_POS;
-	cubeManipulators[2].slider.id = MANIP_RIGHT_SERVO_SLIDER_ID;
-	cubeManipulators[2].slider.botPos = MANIP_RIGHT_SERVO_SLIDER_BOT_POS;
-	cubeManipulators[2].slider.topPos = MANIP_RIGHT_SERVO_SLIDER_TOP_POS;
-	cubeManipulators[2].slider.intermPos = MANIP_RIGHT_SERVO_SLIDER_INTERM_POS;
-	cubeManipulators[2].door.id = MANIP_RIGHT_SERVO_DOOR_ID;
-	cubeManipulators[2].door.closedAngle = MANIP_RIGHT_SERVO_DOOR_CLOSED_POS;
-	cubeManipulators[2].door.openedAngle  = MANIP_RIGHT_SERVO_DOOR_OPENED_POS;
-	cubeManipulators[2].magicCube.id = MANIP_RIGHT_SERVO_MAGIC_CUBE_ID;
-	cubeManipulators[2].magicCube.initialPosition = MANIP_RIGHT_SERVO_MAGIC_CUBE_INITIAL_POS;
-	cubeManipulators[2].magicCube.finalPosition = MANIP_RIGHT_SERVO_MAGIC_CUBE_FINAL_POS;
-	cubeManipulators[2].tasksSequencePtr = &taskTerminator;
+	sorterManipulators[0].topSorter.id = SORTER_SERVO_TOP_ID;
+	sorterManipulators[0].topSorter.rightPos = SORTER_SERVO_TOP_RIGHT_POS;
+	sorterManipulators[0].topSorter.leftPos = SORTER_SERVO_TOP_LEFT_POS;
+	sorterManipulators[0].topSorter.intermPos = SORTER_SERVO_TOP_INTERM_POS;
+	sorterManipulators[0].bottomSorter.id = SORTER_SERVO_BOTTOM_ID;
+	sorterManipulators[0].bottomSorter.rightPos = SORTER_SERVO_BOTTOM_RIGHT_POS;
+	sorterManipulators[0].bottomSorter.leftPos = SORTER_SERVO_BOTTOM_LEFT_POS;
+	sorterManipulators[0].bottomSorter.intermPos = SORTER_SERVO_BOTTOM_INTERM_POS;
+	sorterManipulators[0].bottomSorter.releaseLeftPos = SORTER_SERVO_BOTTOM_RELEASE_LEFT_POS;
+	sorterManipulators[0].bottomSorter.releaseRightPos = SORTER_SERVO_BOTTOM_RELEASE_RIGHT_POS;
+	sorterManipulators[0].latch.id = SORTER_SERVO_LATCH_ID;
+	sorterManipulators[0].latch.openedAngle = SORTER_SERVO_LATCH_OPENED_POS;
+	sorterManipulators[0].latch.closedAngle = SORTER_SERVO_LATCH_CLOSED_POS;
+	sorterManipulators[0].tasksSequencePtr = &sorterTaskTerminator;
 	return;
 }
 
@@ -137,11 +145,6 @@ void checkPosServo(Servo_Checker_Typedef* servoChecker)
 			servoChecker->statusFlag = SERVO_CHECKER_SUCCESFUL_CONFIRMATION;
 			return;
 		}
-//		else if (servoChecker->numberOfTimerPeriods >= SERVO_CHECKER_MAX_TIMEOUT)
-//		{
-//			servoChecker->statusFlag = SERVO_CHECKER_ERROR_WRONG_POSITION;
-//			return;
-//		}
 		else if (checkTimeout(servoChecker->startTimeMillis, SERVO_CHECKER_TIMEOUT_MS))
 		{
 			servoChecker->statusFlag = SERVO_CHECKER_ERROR_WRONG_POSITION;
@@ -165,7 +168,7 @@ void execManipTasks(uint8_t number, Cube_Manipulator_Typedef* manipulator)
 	// Check if task executor is active
 	if (manipulator->subtasksExecutorStatusFlag == TASKS_EXECUTOR_ACTIVE_MODE)
 	{
-		Checker_Status_Typedef checkerStatusFlag = servoChecker[number].statusFlag;
+		Checker_Status_Typedef checkerStatusFlag = servoCheckerCubeManip[number].statusFlag;
 		switch (checkerStatusFlag)
 		{
 			case SERVO_CHECKER_WAITING_MODE:
@@ -186,7 +189,7 @@ void execManipTasks(uint8_t number, Cube_Manipulator_Typedef* manipulator)
 				{
 					manipulator->subtasksExecutorStatusFlag = TASKS_EXECUTOR_SUCCESFUL_EXECUTION;
 					// Reset servo checker
-					resetChecker(&servoChecker[number]);
+					resetChecker(&servoCheckerCubeManip[number]);
 				}
 				else
 				{
@@ -197,17 +200,17 @@ void execManipTasks(uint8_t number, Cube_Manipulator_Typedef* manipulator)
 			case SERVO_CHECKER_ERROR_MAXIMUM_RETRIES_EXCEEDED:
 				manipulator->subtasksExecutorStatusFlag = TASKS_EXECUTOR_ERROR_MAX_RETRIES_EXCEEDED;
 				// Reset servo checker
-				resetChecker(&servoChecker[number]);
+				resetChecker(&servoCheckerCubeManip[number]);
 				break;
 			case SERVO_CHECKER_ERROR_WRONG_POSITION:
 				manipulator->subtasksExecutorStatusFlag = TASKS_EXECUTOR_ERROR_WRONG_POSITION;
 				// Reset servo checker
-				resetChecker(&servoChecker[number]);
+				resetChecker(&servoCheckerCubeManip[number]);
 				break;
 			case SERVO_CHECKER_ERROR_MAXIMUM_LOAD_EXCEEDED:
 				manipulator->subtasksExecutorStatusFlag = TASKS_EXECUTOR_ERROR_MAX_LOAD_EXCEEDED;
 				// Reset servo checker
-				resetChecker(&servoChecker[number]);
+				resetChecker(&servoCheckerCubeManip[number]);
 				break;
 		}
 	}
@@ -271,7 +274,7 @@ void execManipSubtasks(uint8_t number, Cube_Manipulator_Typedef* manipulator)
 	{
 		manipulator->subtasksExecutorStatusFlag = TASKS_EXECUTOR_ERROR_MAX_RETRIES_EXCEEDED;
 		// Reset servo checker
-		resetChecker(&servoChecker[number]);
+		resetChecker(&servoCheckerCubeManip[number]);
 		return;
 	}
 	// Send set angle command to servo
@@ -279,22 +282,161 @@ void execManipSubtasks(uint8_t number, Cube_Manipulator_Typedef* manipulator)
 	{
 		manipulator->subtasksExecutorStatusFlag = TASKS_EXECUTOR_ERROR_MAX_RETRIES_EXCEEDED;
 		// Reset servo checker
-		resetChecker(&servoChecker[number]);
+		resetChecker(&servoCheckerCubeManip[number]);
 		return;
 	}
 	// Reset servo checker
-	resetChecker(&servoChecker[number]);
+	resetChecker(&servoCheckerCubeManip[number]);
 	// Load angle, id, current time into servoChecker and turn it on
-	servoChecker[number].servoId = servoId;
-	servoChecker[number].targetPos = servoTargetPos;
-	servoChecker[number].previousPos = servoCurrentPos;
-	servoChecker[number].statusFlag = SERVO_CHECKER_ACTIVE_MODE;
-	servoChecker[number].startTimeMillis = getLocalTime();
+	servoCheckerCubeManip[number].servoId = servoId;
+	servoCheckerCubeManip[number].targetPos = servoTargetPos;
+	servoCheckerCubeManip[number].previousPos = servoCurrentPos;
+	servoCheckerCubeManip[number].statusFlag = SERVO_CHECKER_ACTIVE_MODE;
+	servoCheckerCubeManip[number].startTimeMillis = getLocalTime();
 	// Extend timer
 	timEnable(SERVO_CHECKER_TIM_MODULE);
 	return;
 }
 
+// FOR SORTER
+void execSorterTasks(uint8_t numberOfsorter, Sorter_Manipulator_Typedef* sorter)
+{
+	// Check if task executor is active
+	if (sorter->subtasksExecutorStatusFlag == TASKS_EXECUTOR_ACTIVE_MODE)
+	{
+		Checker_Status_Typedef checkerStatusFlag = servoCheckerSorterManip[numberOfsorter].statusFlag;
+		switch (checkerStatusFlag)
+		{
+			case SERVO_CHECKER_WAITING_MODE:
+				// First command
+				execSorterSubtasks(numberOfsorter, sorter);
+				// Extend timer
+				timEnable(SERVO_CHECKER_TIM_MODULE);
+				break;
+			case SERVO_CHECKER_ACTIVE_MODE:
+				// Wait for servo checker
+				// Extend timer
+				timEnable(SERVO_CHECKER_TIM_MODULE);
+				break;
+			case SERVO_CHECKER_SUCCESFUL_CONFIRMATION:
+				// Check if all subtasks were executed
+				sorter->tasksSequencePtr++;
+				if(sorter->tasksSequencePtr[0] == SUBTASK_SORTER_TERMINATOR)
+				{
+					sorter->subtasksExecutorStatusFlag = TASKS_EXECUTOR_SUCCESFUL_EXECUTION;
+					// Reset servo checker
+					resetChecker(&servoCheckerSorterManip[numberOfsorter]);
+				}
+				else
+				{
+					// Next subtask
+					execSorterSubtasks(numberOfsorter, sorter);
+				}
+				break;
+			case SERVO_CHECKER_ERROR_MAXIMUM_RETRIES_EXCEEDED:
+				sorter->subtasksExecutorStatusFlag = TASKS_EXECUTOR_ERROR_MAX_RETRIES_EXCEEDED;
+				// Reset servo checker
+				resetChecker(&servoCheckerSorterManip[numberOfsorter]);
+				break;
+			case SERVO_CHECKER_ERROR_WRONG_POSITION:
+				sorter->subtasksExecutorStatusFlag = TASKS_EXECUTOR_ERROR_WRONG_POSITION;
+				// Reset servo checker
+				resetChecker(&servoCheckerSorterManip[numberOfsorter]);
+				break;
+			case SERVO_CHECKER_ERROR_MAXIMUM_LOAD_EXCEEDED:
+				sorter->subtasksExecutorStatusFlag = TASKS_EXECUTOR_ERROR_MAX_LOAD_EXCEEDED;
+				// Reset servo checker
+				resetChecker(&servoCheckerSorterManip[numberOfsorter]);
+				break;
+		}
+	}
+	return;
+}
+void execSorterSubtasks(uint8_t numberOfSorter, Sorter_Manipulator_Typedef* sorter)
+{
+	// Extract current subtask
+	Sorter_Subtasks_Typedef subtask = *(sorter->tasksSequencePtr);
+	
+	// Buffers for servo id, target position and current position
+	uint16_t servoTargetPos;
+	float servoCurrentPos;
+	uint8_t servoId;
+	
+	// Unload values that corresponds to partivular subtask
+	switch (subtask)
+	{
+		case SUBTASK_TOP_SORTER_SORT_BAD_BALL:
+			servoId  = sorter->topSorter.id;
+			servoTargetPos = sorter->topSorter.rightPos;
+			break;
+		case SUBTASK_TOP_SORTER_SORT_GOOD_BALL:
+			servoId  = sorter->topSorter.id;
+			servoTargetPos = sorter->topSorter.leftPos;
+			break;
+		case SUBTASK_TOP_SORTER_GO_TO_INTERM_POS:
+			servoId  = sorter->topSorter.id;
+			servoTargetPos = sorter->topSorter.intermPos;
+			break;
+		case SUBTASK_BOTTOM_SORTER_SORT_TO_RIGHT:
+			servoId  = sorter->bottomSorter.id;
+			servoTargetPos = sorter->bottomSorter.rightPos;
+			break;
+		case SUBTASK_BOTTOM_SORTER_SORT_TO_LEFT:
+			servoId  = sorter->bottomSorter.id;
+			servoTargetPos = sorter->bottomSorter.leftPos;
+			break;
+		case SUBTASK_BOTTOM_SORTER_GO_TO_INTERM_POS:
+			servoId  = sorter->bottomSorter.id;
+			servoTargetPos = sorter->bottomSorter.intermPos;
+			break;
+		case SUBTASK_BOTTOM_SORTER_RELEASE_LEFT:
+			servoId  = sorter->bottomSorter.id;
+			servoTargetPos = sorter->bottomSorter.releaseLeftPos;
+			break;
+		case SUBTASK_BOTTOM_SORTER_RELEASE_RIGHT:
+			servoId  = sorter->bottomSorter.id;
+			servoTargetPos = sorter->bottomSorter.releaseRightPos;
+			break;
+		case SUBTASK_OPEN_LATCH:
+			servoId  = sorter->latch.id;
+			servoTargetPos = sorter->latch.openedAngle;
+			break;
+		case SUBTASK_CLOSE_LATCH:
+			servoId  = sorter->latch.id;
+			servoTargetPos = sorter->latch.closedAngle;
+			break;
+		case SUBTASK_SORTER_TERMINATOR:
+			sorter->subtasksExecutorStatusFlag = TASKS_EXECUTOR_ERROR_TERMINATOR_REACHED;
+			return;
+	}
+	// Read current angle of the servo
+	if (!getServoAngleWithRetries(servoId, &servoCurrentPos))
+	{
+		sorter->subtasksExecutorStatusFlag = TASKS_EXECUTOR_ERROR_MAX_RETRIES_EXCEEDED;
+		// Reset servo checker
+		resetChecker(&servoCheckerSorterManip[numberOfSorter]);
+		return;
+	}
+	// Send set angle command to servo
+	if (!setServoAngleWithRetries(servoId, servoTargetPos))
+	{
+		sorter->subtasksExecutorStatusFlag = TASKS_EXECUTOR_ERROR_MAX_RETRIES_EXCEEDED;
+		// Reset servo checker
+		resetChecker(&servoCheckerSorterManip[numberOfSorter]);
+		return;
+	}
+	// Reset servo checker
+	resetChecker(&servoCheckerSorterManip[numberOfSorter]);
+	// Load angle, id, current time into servoChecker and turn it on
+	servoCheckerSorterManip[numberOfSorter].servoId = servoId;
+	servoCheckerSorterManip[numberOfSorter].targetPos = servoTargetPos;
+	servoCheckerSorterManip[numberOfSorter].previousPos = servoCurrentPos;
+	servoCheckerSorterManip[numberOfSorter].statusFlag = SERVO_CHECKER_ACTIVE_MODE;
+	servoCheckerSorterManip[numberOfSorter].startTimeMillis = getLocalTime();
+	// Extend timer
+	timEnable(SERVO_CHECKER_TIM_MODULE);
+	return;
+}
 //--------------------------------------------- High-level command assignment ----------------------------------//
 void setManipHighLevelCommand(Manipulator_Command_Typedef command, uint8_t number, Cube_Manipulator_Typedef* manipulator)
 {
@@ -335,6 +477,59 @@ void setManipHighLevelCommand(Manipulator_Command_Typedef command, uint8_t numbe
 	}
 	// Set flag for task sequence execution
 	manipulator->subtasksExecutorStatusFlag = TASKS_EXECUTOR_ACTIVE_MODE;
+	// Turn timer on
+	timEnable(SERVO_CHECKER_TIM_MODULE);
+	return;
+}
+
+void setSorterHighLevelCommand(Sorter_Command_Typedef command, uint8_t numberOfSorter, Sorter_Manipulator_Typedef* sorter)
+{
+if (numberOfSorter > NUMBER_OF_MANIPULATORS)
+	{
+		// Wrong manipulator's id
+		return;
+	}
+	//Check if manipulator is still working
+	if (sorter->subtasksExecutorStatusFlag == TASKS_EXECUTOR_ACTIVE_MODE)
+	{
+		return;
+	}
+	// Set Command
+	switch(command)
+	{
+		case TOP_SORT_BAD_BALL:
+			sorter->tasksSequencePtr = topSorterSortBadBallTaskSeq;
+			break;
+		case TOP_SORT_GOOD_BALL:
+			sorter->tasksSequencePtr = topSorterSortGoodBallTaskSeq;
+			break;
+		case TOP_SORT_GO_TO_INTERM:
+			sorter->tasksSequencePtr = topSorterGoToIntermTaskSeq;
+			break;
+		case BOTTOM_SORT_BALL_TO_RIGHT:
+			sorter->tasksSequencePtr = bottomSorterSortToRightTaskSeq;
+			break;
+		case BOTTOM_SORT_BALL_TO_LEFT:
+			sorter->tasksSequencePtr = bottomSorterSortToLeftTaskSeq;
+			break;
+		case BOTTOM_SORT_GO_TO_INTERM:
+			sorter->tasksSequencePtr = bottomSorterGoToIntermTaskSeq;
+			break;
+		case BOTTOM_SORT_RELEASE_BALL_TO_LEFT:
+			sorter->tasksSequencePtr = bottomSorterReleaseToLeftTaskSeq;
+			break;
+		case BOTTOM_SORT_RELEASE_BALL_TO_RIGHT:
+			sorter->tasksSequencePtr = bottomSorterReleaseToRightTaskSeq;
+			break;
+		case OPEN_LATCH:
+			sorter->tasksSequencePtr = openLatchTaskSeq;
+			break;
+		case CLOSE_LATCH:
+			sorter->tasksSequencePtr = closeLatchTaskSeq;
+			break;
+	}
+	// Set flag for task sequence execution
+	sorter->subtasksExecutorStatusFlag = TASKS_EXECUTOR_ACTIVE_MODE;
 	// Turn timer on
 	timEnable(SERVO_CHECKER_TIM_MODULE);
 	return;

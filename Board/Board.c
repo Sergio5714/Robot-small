@@ -87,7 +87,7 @@ void boardInitAll()
 	gpioInitPin(ENCODER_4_CHA_PORT, ENCODER_4_CHA_PIN, GPIO_MODE_AF, GPIO_OUTPUT_MODE_PP, GPIO_PUPD_NOPULL);
 	gpioInitPin(ENCODER_4_CHB_PORT, ENCODER_4_CHB_PIN, GPIO_MODE_AF, GPIO_OUTPUT_MODE_PP, GPIO_PUPD_NOPULL);
 	
-	// Set alternatice function
+	// Set alternative function
 	gpioInitPinAf(ENCODER_1_CHA_PORT, ENCODER_1_CHA_PIN, ENCODER_1_PIN_AF);
 	gpioInitPinAf(ENCODER_1_CHB_PORT, ENCODER_1_CHB_PIN, ENCODER_1_PIN_AF);
 	gpioInitPinAf(ENCODER_2_CHA_PORT, ENCODER_2_CHA_PIN, ENCODER_2_PIN_AF);
@@ -102,7 +102,18 @@ void boardInitAll()
 	timInitEncoder(ENCODER_2_TIM_MODULE);
 	timInitEncoder(ENCODER_3_TIM_MODULE);
 	timInitEncoder(ENCODER_4_TIM_MODULE);
+	//--------------------------------------------- Initialization of timer for encoder of shooter motors -------//
+	// Settings for pins
+	// Base Init
+	gpioInitPin(SHOOTER_ENCODER_CHA_PORT, SHOOTER_ENCODER_CHA_PIN, GPIO_MODE_AF, GPIO_OUTPUT_MODE_PP, GPIO_PUPD_NOPULL);
+	gpioInitPin(SHOOTER_ENCODER_CHB_PORT, SHOOTER_ENCODER_CHB_PIN, GPIO_MODE_AF, GPIO_OUTPUT_MODE_PP, GPIO_PUPD_NOPULL);
 	
+	// Set alternatice function
+	gpioInitPinAf(SHOOTER_ENCODER_CHA_PORT, SHOOTER_ENCODER_CHA_PIN, SHOOTER_ENCODER_PIN_AF);
+	gpioInitPinAf(SHOOTER_ENCODER_CHB_PORT, SHOOTER_ENCODER_CHB_PIN, SHOOTER_ENCODER_PIN_AF);
+	
+	// Init timer modules
+	timInitEncoder(SHOOTER_ENCODER_TIM_MODULE);
 	//--------------------------------------------- Initialization of PWM channels for motor control ------------//
 	
 	// Settings for pins
@@ -135,6 +146,32 @@ void boardInitAll()
 	timSettings.TIM_Prescaler = MOTOR_PWM_TIM_PSC;
 	timInitBase(MOTOR_PWM_TIM_MODULE, &timSettings);
 	timInitPwm(MOTOR_PWM_TIM_MODULE, &timSettings, (float[4]){0.1, 0.1, 0.1, 0.1}, (uint8_t[4]){0x01, 0x01, 0x01, 0x01});
+	
+	//--------------------------------------------- Initialization of PWM for shooters control ------------------//
+	
+	// Settings for pins
+	// Base initialization of PWM pins
+	gpioInitPin(SHOOTER_MOTOR_CH1_PWM_PORT, SHOOTER_MOTOR_CH1_PWM_PIN, GPIO_MODE_OUT, GPIO_OUTPUT_MODE_PP, GPIO_PUPD_NOPULL);
+	gpioInitPin(SHOOTER_MOTOR_CH2_PWM_PORT, SHOOTER_MOTOR_CH2_PWM_PIN, GPIO_MODE_OUT, GPIO_OUTPUT_MODE_PP, GPIO_PUPD_NOPULL);
+	
+	
+	// Set zero output voltage
+	gpioPinSetLevel(SHOOTER_MOTOR_CH1_PWM_PORT, SHOOTER_MOTOR_CH1_PWM_PIN, GPIO_LEVEL_LOW);
+	gpioPinSetLevel(SHOOTER_MOTOR_CH2_PWM_PORT, SHOOTER_MOTOR_CH2_PWM_PIN, GPIO_LEVEL_LOW);
+	
+	// Initialize timer module for PWM
+	timSettings.TIM_Period = SHOOTER_MOTOR_PWM_TIM_ARR;
+	timSettings.TIM_Prescaler = SHOOTER_MOTOR_PWM_TIM_PSC;
+	timInitBase(SHOOTER_MOTOR_PWM_TIM_MODULE, &timSettings);
+	timInitPwm(SHOOTER_MOTOR_PWM_TIM_MODULE, &timSettings, (float[4]){0.0, 0.0, 0.0, 0.0}, (uint8_t[4]){0x01, 0x01, 0x00, 0x00});
+	
+	// Interrupt enable
+	// Update interrupt
+	timInterruptEnable(SHOOTER_MOTOR_PWM_TIM_MODULE, TIM_DIER_UIE);
+	// Ch1 interrupt
+	timInterruptEnable(SHOOTER_MOTOR_PWM_TIM_MODULE, TIM_DIER_CC1IE);
+	// Ch2 interrupt
+	timInterruptEnable(SHOOTER_MOTOR_PWM_TIM_MODULE, TIM_DIER_CC1IE);
 	
 	//--------------------------------------------- Motor control timer initialization ---------------------------//
 	timSettings.TIM_Period = MOTOR_CONTROL_TIM_ARR;
@@ -188,9 +225,14 @@ void boardInitAll()
 	timEnable(ENCODER_3_TIM_MODULE);
 	timEnable(ENCODER_4_TIM_MODULE);
 	
+	// Enable Encoder for shooter motors
+	timEnable(SHOOTER_ENCODER_TIM_MODULE);
+	
 	// Enable timers
 	// Enable PWM for Motors
 	timEnable(MOTOR_PWM_TIM_MODULE);
+	// Enable Shooter Motor PWM timer
+	timEnable(SHOOTER_MOTOR_PWM_TIM_MODULE);
 	// Enable Motor control timer
 	timEnable(MOTOR_CONTROL_TIM_MODULE);
 	// Enable Manipulators control timer
@@ -206,6 +248,8 @@ void boardInitAll()
 	
 	__NVIC_EnableIRQ(I2C_MODULE_ERROR_IRQN);
 	
+	__NVIC_EnableIRQ(SHOOTER_MOTOR_PWM_TIM_IRQN);
+	
 	__NVIC_EnableIRQ(MOTOR_CONTROL_IRQN);
 	__NVIC_EnableIRQ(SERVO_CHECKER_IRQN);
 	
@@ -213,15 +257,17 @@ void boardInitAll()
 	
 	// Priority
 	__NVIC_SetPriority(COM_USART_IRQN, 0X00);
-	__NVIC_SetPriority(LOCAL_TIME_IRQN, 0X01);
+	__NVIC_SetPriority(SHOOTER_MOTOR_PWM_TIM_IRQN, 0X01);
 	
-	__NVIC_SetPriority(DYNAMIXEL_USART_IRQN, 0X02);
-	__NVIC_SetPriority(EXTI_STARTUP_IRQ, 0X02);
+	__NVIC_SetPriority(LOCAL_TIME_IRQN, 0X02);
 	
-	__NVIC_SetPriority(I2C_MODULE_ERROR_IRQN, 0X03);
+	__NVIC_SetPriority(DYNAMIXEL_USART_IRQN, 0X03);
+	__NVIC_SetPriority(EXTI_STARTUP_IRQ, 0X03);
 	
-	__NVIC_SetPriority(MOTOR_CONTROL_IRQN, 0X05);
-	__NVIC_SetPriority(SERVO_CHECKER_IRQN, 0X04);
+	__NVIC_SetPriority(I2C_MODULE_ERROR_IRQN, 0X04);
+	
+	__NVIC_SetPriority(MOTOR_CONTROL_IRQN, 0X06);
+	__NVIC_SetPriority(SERVO_CHECKER_IRQN, 0X05);
 	
 	// Global enable
 	__enable_irq();

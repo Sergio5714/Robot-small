@@ -82,12 +82,6 @@ void readEnc(void)
 	}
 	#endif
 	
-	// Calculate distance that wheel passed
-	for (i = 0x00; i < ROBOT_NUMBER_OF_MOTORS; i++)
-	{
-		wheelsCoord[i] += wheelsSpeed[i] * MOTOR_CONTROL_PERIOD;
-	}
-	
 	// Calculate inverse kinematics (wheelsSpeed -> robotSpeedCs1)
 	calcInverseKin();
 	
