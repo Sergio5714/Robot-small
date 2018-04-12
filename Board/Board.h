@@ -85,6 +85,12 @@
 #define SHOOTER_ENCODER_PIN_AF           GPIO_AF_TIM5
 #define SHOOTER_ENCODER_CNT              ((uint16_t *)&(SHOOTER_ENCODER_TIM_MODULE->CNT))
 
+#define SHOOTER_ENCODER_SW_FIRST_PORT    GPIOE
+#define SHOOTER_ENCODER_SW_FIRST_PIN     GPIO_Pin_7
+
+#define SHOOTER_ENCODER_SW_SECOND_PORT   GPIOB
+#define SHOOTER_ENCODER_SW_SECOND_PIN    GPIO_Pin_9
+
 //--------------------------------------------- Motor PWM control  -------------------------------------------//
 
 // ARR = 42000, PSC = 2, fapb1 = 42 MHZ, PWM frequency = 1000 Hz

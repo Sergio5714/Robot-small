@@ -39,6 +39,8 @@ Manipulator_Subtasks_Typedef taskTerminator = SUBTASK_TERMINATOR;
 Sorter_Subtasks_Typedef      topSorterSortBadBallTaskSeq[]  = {SUBTASK_TOP_SORTER_SORT_BAD_BALL, SUBTASK_SORTER_TERMINATOR};
 Sorter_Subtasks_Typedef      topSorterSortGoodBallTaskSeq[] = {SUBTASK_TOP_SORTER_SORT_GOOD_BALL, SUBTASK_SORTER_TERMINATOR};
 Sorter_Subtasks_Typedef      topSorterGoToIntermTaskSeq[] = {SUBTASK_TOP_SORTER_GO_TO_INTERM_POS, SUBTASK_SORTER_TERMINATOR};
+Sorter_Subtasks_Typedef      topSorterGoToIntermGoodTaskSeq[] = {SUBTASK_TOP_SORTER_GO_TO_INTERM_GOOD_POS, SUBTASK_SORTER_TERMINATOR};
+Sorter_Subtasks_Typedef      topSorterGoToIntermBadTaskSeq[] = {SUBTASK_TOP_SORTER_GO_TO_INTERM_BAD_POS, SUBTASK_SORTER_TERMINATOR};
 Sorter_Subtasks_Typedef      bottomSorterSortToRightTaskSeq[] = {SUBTASK_BOTTOM_SORTER_SORT_TO_RIGHT, SUBTASK_SORTER_TERMINATOR};
 Sorter_Subtasks_Typedef      bottomSorterSortToLeftTaskSeq[] = {SUBTASK_BOTTOM_SORTER_SORT_TO_LEFT, SUBTASK_SORTER_TERMINATOR};
 Sorter_Subtasks_Typedef      bottomSorterGoToIntermTaskSeq[] = {SUBTASK_BOTTOM_SORTER_GO_TO_INTERM_POS, SUBTASK_SORTER_TERMINATOR};
@@ -85,6 +87,9 @@ void initManipulators(void)
 	sorterManipulators[0].topSorter.id = SORTER_SERVO_TOP_ID;
 	sorterManipulators[0].topSorter.rightPos = SORTER_SERVO_TOP_RIGHT_POS;
 	sorterManipulators[0].topSorter.leftPos = SORTER_SERVO_TOP_LEFT_POS;
+	sorterManipulators[0].topSorter.intermPos = SORTER_SERVO_TOP_INTERM_POS;
+	sorterManipulators[0].topSorter.releaseLeftPos = SORTER_SERVO_TOP_INTERM_LEFT_POS;
+	sorterManipulators[0].topSorter.releaseRightPos = SORTER_SERVO_TOP_INTERM_RIGHT_POS;
 	sorterManipulators[0].topSorter.intermPos = SORTER_SERVO_TOP_INTERM_POS;
 	sorterManipulators[0].bottomSorter.id = SORTER_SERVO_BOTTOM_ID;
 	sorterManipulators[0].bottomSorter.rightPos = SORTER_SERVO_BOTTOM_RIGHT_POS;
@@ -377,6 +382,14 @@ void execSorterSubtasks(uint8_t numberOfSorter, Sorter_Manipulator_Typedef* sort
 			servoId  = sorter->topSorter.id;
 			servoTargetPos = sorter->topSorter.intermPos;
 			break;
+		case SUBTASK_TOP_SORTER_GO_TO_INTERM_GOOD_POS:
+			servoId  = sorter->topSorter.id;
+			servoTargetPos = sorter->topSorter.releaseRightPos;
+			break;
+		case SUBTASK_TOP_SORTER_GO_TO_INTERM_BAD_POS:
+			servoId  = sorter->topSorter.id;
+			servoTargetPos = sorter->topSorter.releaseLeftPos;
+			break;
 		case SUBTASK_BOTTOM_SORTER_SORT_TO_RIGHT:
 			servoId  = sorter->bottomSorter.id;
 			servoTargetPos = sorter->bottomSorter.rightPos;
@@ -505,6 +518,12 @@ if (numberOfSorter > NUMBER_OF_MANIPULATORS)
 			break;
 		case TOP_SORT_GO_TO_INTERM:
 			sorter->tasksSequencePtr = topSorterGoToIntermTaskSeq;
+			break;
+		case TOP_SORT_GO_TO_INTERM_BAD:
+			sorter->tasksSequencePtr = topSorterGoToIntermBadTaskSeq;
+			break;
+		case TOP_SORT_GO_TO_INTERM_GOOD:
+			sorter->tasksSequencePtr = topSorterGoToIntermGoodTaskSeq;
 			break;
 		case BOTTOM_SORT_BALL_TO_RIGHT:
 			sorter->tasksSequencePtr = bottomSorterSortToRightTaskSeq;

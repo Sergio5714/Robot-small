@@ -4,6 +4,30 @@ Chosen_Motor_Typedef chosenShooter;
 
 Pid_Regulator_Struct_Typedef pidRegulator;
 
+void shooterChooseEnc(Chosen_Encoder_Typedef encoderNumber)
+{
+	switch(encoderNumber)
+	{
+		case CHOSEN_ENCODER_FIRST:
+		{
+			// Turn off second encoder
+			gpioPinSetLevel(SHOOTER_ENCODER_SW_SECOND_PORT, SHOOTER_ENCODER_SW_SECOND_PIN, GPIO_LEVEL_LOW);
+			// Turn on first encoder
+			gpioPinSetLevel(SHOOTER_ENCODER_SW_FIRST_PORT, SHOOTER_ENCODER_SW_FIRST_PIN, GPIO_LEVEL_HIGH);
+			break;
+		}
+		case CHOSEN_ENCODER_SECOND:
+		{
+			// Turn off first encoder
+			gpioPinSetLevel(SHOOTER_ENCODER_SW_FIRST_PORT, SHOOTER_ENCODER_SW_FIRST_PIN, GPIO_LEVEL_LOW);
+			// Turn on second encoder
+			gpioPinSetLevel(SHOOTER_ENCODER_SW_SECOND_PORT, SHOOTER_ENCODER_SW_SECOND_PIN, GPIO_LEVEL_HIGH);
+			break;
+		}
+	}
+	return;
+}
+
 void shooterReadEnc()
 {
 	// Buffer for encoders' ticks
@@ -21,7 +45,7 @@ void shooterReadEnc()
 	return;
 }
 
-void shooterSetdutyCycle(Chosen_Motor_Typedef motorNumber, float dutyCycle)
+void shooterSetDutyCycle(Chosen_Motor_Typedef motorNumber, float dutyCycle)
 {
 	timPwmChangeDutyCycle(SHOOTER_MOTOR_PWM_TIM_MODULE, motorNumber + 0x01, dutyCycle);
 	return;

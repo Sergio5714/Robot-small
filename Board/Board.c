@@ -114,6 +114,14 @@ void boardInitAll()
 	
 	// Init timer modules
 	timInitEncoder(SHOOTER_ENCODER_TIM_MODULE);
+	
+	// Initilaze switches for encoders
+	gpioInitPin(SHOOTER_ENCODER_SW_FIRST_PORT, SHOOTER_ENCODER_SW_FIRST_PIN, GPIO_MODE_OUT, GPIO_OUTPUT_MODE_PP, GPIO_PUPD_NOPULL);
+	gpioInitPin(SHOOTER_ENCODER_SW_SECOND_PORT, SHOOTER_ENCODER_SW_SECOND_PIN, GPIO_MODE_OUT, GPIO_OUTPUT_MODE_PP, GPIO_PUPD_NOPULL);
+	
+	// Turn off encoders
+	gpioPinSetLevel(SHOOTER_ENCODER_SW_FIRST_PORT, SHOOTER_ENCODER_SW_FIRST_PIN, GPIO_LEVEL_LOW);
+	gpioPinSetLevel(SHOOTER_ENCODER_SW_SECOND_PORT, SHOOTER_ENCODER_SW_SECOND_PIN, GPIO_LEVEL_LOW);
 	//--------------------------------------------- Initialization of PWM channels for motor control ------------//
 	
 	// Settings for pins

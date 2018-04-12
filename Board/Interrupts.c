@@ -34,11 +34,7 @@ void TIM6_DAC_IRQHandler(void)
 		}
 		else
 		{
-			// If there is no odometry movement make decceleraton for all speeds 
-//			if (Robot.movingStatusFlag)
-//			{
-//				// TBD
-//			}
+			// TBD
 		}
 		
 		// Calculation of forward kinematics
@@ -50,12 +46,15 @@ void TIM6_DAC_IRQHandler(void)
 			// Set speeds for motors (robotTargetMotorSpeedCs1 -> PWM)
 			setMotorSpeeds();
 		}
+		
 		// Calculate speed of shooter motor
 		shooterReadEnc();
+		
 		// Calculate pid
 		pidCalc(&pidRegulator);
+		
 		// Set duty cycle
-		shooterSetdutyCycle(chosenShooter, pidRegulator.output);
+		shooterSetDutyCycle(chosenShooter, pidRegulator.output);
 	}
 	return;
 }

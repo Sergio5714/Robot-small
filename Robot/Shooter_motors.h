@@ -15,6 +15,9 @@
 #define SHOOTER_MOTORS_MAX_ROT_SPEED       30.0f
 #define SHOOTER_MOTORS_MIN_ROT_SPEED       0.0f
 
+#define SHOOTER_MOTORS_MAX_ROT_SPEED       30.0f
+#define SHOOTER_MOTORS_MIN_ROT_SPEED       0.0f
+
 // Parameters of motors
 // Gear ratio
 #define SHOOTER_MOTOR_GR                   1.0f
@@ -35,6 +38,12 @@ typedef enum
 	CHOSEN_MOTOR_FIRST,
 	CHOSEN_MOTOR_SECOND,
 } Chosen_Motor_Typedef;
+
+typedef enum
+{
+	CHOSEN_ENCODER_FIRST,
+	CHOSEN_ENCODER_SECOND,
+} Chosen_Encoder_Typedef;
 
 typedef struct
 {
@@ -57,7 +66,8 @@ typedef struct
 
 //--------------------------------------------- Common functions -----------------------------------------------//
 void shooterReadEnc(void);
-void shooterSetdutyCycle(Chosen_Motor_Typedef motorNumber, float dutyCycle);
+void shooterChooseEnc(Chosen_Encoder_Typedef encoderNumber);
+void shooterSetDutyCycle(Chosen_Motor_Typedef motorNumber, float dutyCycle);
 
 //--------------------------------------------- PID control ----------------------------------------------------//
 

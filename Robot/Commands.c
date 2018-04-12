@@ -413,6 +413,16 @@ void checkCommandAndExecute()
 					setSorterHighLevelCommand(TOP_SORT_GO_TO_INTERM, 0x00, &sorterManipulators[0]);
 					break;
 				}
+				case 0x03:
+				{
+					setSorterHighLevelCommand(TOP_SORT_GO_TO_INTERM_GOOD, 0x00, &sorterManipulators[0]);
+					break;
+				}
+				case 0x04:
+				{
+					setSorterHighLevelCommand(TOP_SORT_GO_TO_INTERM_BAD, 0x00, &sorterManipulators[0]);
+					break;
+				}
 				default:
 				break;
 			}
@@ -470,10 +480,12 @@ void checkCommandAndExecute()
 			// Choose motor
 			if (inputCommand.params[0] == 0x00)
 			{
+				shooterChooseEnc(CHOSEN_ENCODER_FIRST);
 				chosenShooter = CHOSEN_MOTOR_FIRST;
 			}
 			else if (inputCommand.params[0] == 0x01)
 			{
+				shooterChooseEnc(CHOSEN_ENCODER_SECOND);
 				chosenShooter = CHOSEN_MOTOR_SECOND;
 			}
 			// Choose mode
