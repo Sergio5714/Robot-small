@@ -16,6 +16,9 @@ extern Sorter_Manipulator_Typedef sorterManipulators[NUMBER_OF_SORTERS];
 extern float shooterMotorSpeed;
 extern Pid_Regulator_Struct_Typedef pidRegulator;
 extern Chosen_Motor_Typedef chosenShooter;
+extern uint32_t regulationStartTime;
+extern uint32_t timeOfStart;
+extern Range_Finders_Struct_Typedef rangeFinders;
 
 enum
 {
@@ -43,6 +46,7 @@ enum
 	GET_ODOMETRY_MOVEMENT_STATUS  = 0xA0,
 	GET_MANIPULATOR_STATUS        = 0xA1,
 	GET_STARTUP_STATUS            = 0xA3,
+	FORCED_START                  = 0xA4,
 	
 	TAKE_CUBE                     = 0xB0,
 	UNLOAD_TOWER                  = 0xB1,
@@ -50,6 +54,7 @@ enum
 	LIFT_MANIPULATOR_TO_INTERM    = 0xB3,
 	RELEASE_MAGIC_CUBE            = 0xB4,
 	TAKE_LAST_CUBE                = 0xB5,
+	MAKE_FUNNY_ACTION             = 0xB6,
 	
 	ODOMETRY_MOVEMENT             = 0xA2,
 	
@@ -58,7 +63,11 @@ enum
 	MOVE_TOP_SORTER               = 0xC2,
 	MOVE_BOTTOM_SORTER            = 0xC3,
 	TURN_ON_AND_OFF_MOTORS        = 0xC4,
-	GET_SHOOTER_MOTOR_SPEED       = 0xC5
+	GET_SHOOTER_MOTOR_SPEED       = 0xC5,
+	
+	GET_DATA_AND_STATUS_FROM_RF   = 0xD1,
+	
+	TURN_COLL_AVOID_ON_OFF        = 0xE0,
 };
 
 void checkCommandAndExecute(void);

@@ -31,11 +31,12 @@ void I2C2_ER_IRQHandler(void);
 void TIM7_IRQHandler(void);
 
 // Interrupt handler for external startup interrupt
-void EXTI1_IRQHandler(void);
+//void EXTI1_IRQHandler(void);
 
 //--------------------------------------------- Some funtions for local time calculations --------------------------------------//
 uint32_t getLocalTime(void);
+uint32_t getTimeDifference(uint32_t startTime);
 uint8_t checkTimeout(uint32_t startTime, uint32_t timeout);
-void delayMs(uint16_t delay);
+void delayInTenthOfMs(uint16_t delay);
 
 #endif

@@ -166,17 +166,34 @@
 #define SERVO_CHECKER_PERIOD             0.01f
 #define SERVO_CHECKER_TICKS_TO_SEC       0.00000238f
 
+//--------------------------------------------- GPIO for servo reboot ----------------------------------------------------------//
+#define SERVO_REBOOT_PIN                 GPIO_Pin_3
+#define SERVO_REBOOT_PORT                GPIOD
 
-//--------------------------------------------- Timer for local time in ms (1000 Hz) -------------------------------------------//
-// ARR = 42000, PSC = 2, fapb1 = 42 MHZ, Frequency = 1000 Hz
+//--------------------------------------------- Timer for collision avoidance (50 Hz) ------------------------------------------//
+
+// ARR = 42000, PSC = 40, fapb1 = 42 MHZ, Frequency = 50 Hz
+#define COLL_AVOID_TIM_MODULE            TIM14
+#define COLL_AVOID_TIM_PSC               0x28
+#define COLL_AVOID_TIM_ARR               0xA410
+#define COLL_AVOID_IRQN                  TIM8_TRG_COM_TIM14_IRQn
+#define COLL_AVOID_PERIOD                0.02f
+#define COLL_AVOID_PERIOD_MILLISEC       (uint32_t)(COLL_AVOID_PERIOD  * 1000)
+
+//--------------------------------------------- GPIO for collision avoidance LED -----------------------------------------------//
+#define COLL_AVOID_LED_PIN               GPIO_Pin_2
+#define COLL_AVOID_LED_PORT              GPIOD
+
+
+//--------------------------------------------- Timer for local time in one tenth of a ms (10000 Hz) ---------------------------//
+// ARR = 4200, PSC = 2, fapb1 = 42 MHZ, Frequency = 10000 Hz
 #define LOCAL_TIME_TIM_MODULE            TIM7
 #define LOCAL_TIME_TIM_PSC               0x02
-#define LOCAL_TIME_TIM_ARR               0xA410
+#define LOCAL_TIME_TIM_ARR               0x1068
 #define LOCAL_TIME_IRQN                  TIM7_IRQn
-#define LOCAL_TIME_PERIOD                0.01f
-#define LOCAL_TIME_TICKS_TO_SEC          0.00000238f
+#define LOCAL_TIME_PERIOD                0.0001f
 
-//--------------------------------------------- External interrupts ------------------------------------------------------------//
+////--------------------------------------------- External interrupts ------------------------------------------------------------//
 
 #define EXTI_STARTUP_IRQ                 EXTI1_IRQn
 #define EXTI_STARTUP_PORT                GPIOD
@@ -192,5 +209,11 @@
 
 // Initialize all necessary peripheral devices
 void boardInitAll(void);
+
+// Indicate error
+void showError(void);
+
+// Indicate error
+void showNoError(void);
 
 #endif

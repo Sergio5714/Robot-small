@@ -5,37 +5,32 @@
 #include "Collision_avoidance.h"
 #include "Shooter_motors.h"
 
-
+// Struct with Robot's status
 extern RobotStatus Robot;
+
+// I2C module for rangefinders
 extern I2C_Module_With_State_Typedef I2CModule;
 
-
-extern uint32_t timeMilliseconds;
-extern uint32_t timeOfLastI2CResetMillis;
+// Time of Robot start
+extern uint32_t timeOfStart;
 
 
 uint32_t numberOfReceivedPackages;
 uint32_t numberOfChecksumErrors;
 uint32_t numberOfSmallLengthErrors;
 
-uint8_t values;
-
-uint8_t range;
-uint8_t rangeRaw;
-
-
 int main(void)
-{		
-   	boardInitAll();
+{
+   	// Init everything 
+    boardInitAll();
+	// Upload angle values to manipulators
 	initManipulators();
-	Robot.forwardKinCalcStatusFlag = 0x01;
+	// PID
 	pidInit();
+	// Turn on Forward kinematics calculations and Collision avoidance 
+	Robot.forwardKinCalcStatusFlag = 0x01;
+	Robot.collisionAvoidanceStatusFlag = 0x01;
 	
-	
-	//initAllRangefinders();
-	//rangeFinderInitContiniousInterruptMode(RANGEFINDER_DEFAULT_ADDR);
-	//startContiniousMeasurements(RANGEFINDER_DEFAULT_ADDR);
-
 	while (1)
 	{
 		switch(getPackage())
@@ -52,5 +47,14 @@ int main(void)
 				break;
 		};
 		checkCommandAndExecute();
+		if (Robot.startupStatusFlag)
+		{
+			// If time is up
+			if (checkTimeout(timeOfStart, ROBOT_TIME_OF_MATCH_TENTH_OF_MS))
+			{
+				turnEverythingOff();
+				Robot.startupStatusFlag = 0x00;
+			}
+		}
 	}
 }

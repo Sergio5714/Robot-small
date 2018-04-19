@@ -7,49 +7,56 @@
 #include "stdlib.h"
 #include "math.h"
 #include "Manipulators.h"
+#include "Collision_avoidance.h"
 
 // Encoder imitation mode
 //#define ENCODER_IMITATION
 
-#define PI_NUMBER                          3.14159265358f
+#define PI_NUMBER                                 3.14159265358f
 
 // Common robot parameters
-#define ROBOT_NUMBER_OF_MOTORS             0x04
+#define ROBOT_NUMBER_OF_MOTORS                    0x04
+#define ROBOT_TIME_OF_MATCH_TENTH_OF_MS           0xF4240 // 100 sec
 
 //--------------------------------------------- Definitions for motors -----------------------------------------//
 
 // For SetMotorSpeed function to convert speed in rad/s to duty cycle (PWM)
 // PWM = A*speed + B
-#define ESCON_CALIBR_COEF_A                0.014993288f
-#define ESCON_CALIBR_COEF_B                0.1f
+#define ESCON_CALIBR_COEF_A                       0.014993288f
+#define ESCON_CALIBR_COEF_B                       0.1f
 
 
 // Minimum and maximum speed of motor/wheel in rad/s 
 // (it corresponds to maximum duty cycle and minimum duty cycle)
-#define MAX_ROT_SPEED                      53.3572085f
-#define MIN_ROT_SPEED                      0.0f
-#define EPS_OF_ROT_SPEED                   0.004f
+#define MAX_ROT_SPEED                             53.3572085f
+#define MIN_ROT_SPEED                             0.0f
+#define EPS_OF_ROT_SPEED                          0.004f
 
 // Parameters of motors
 // Gear ratio
-#define MAXON_MOTOR_LONG_GR                21.0f
+#define MAXON_MOTOR_LONG_GR                       21.0f
 
 // Encoder's ticks per one rotation of initial shaft
-#define MAXON_MOTOR_ENC_TICKS              4096
+#define MAXON_MOTOR_ENC_TICKS                     4096
 
 // Total number of ticks per one rotation
-#define MAXON_MOTOR_LONG_TOTAL_TICKS       MAXON_MOTOR_LONG_GR * MAXON_MOTOR_ENC_TICKS
+#define MAXON_MOTOR_LONG_TOTAL_TICKS              MAXON_MOTOR_LONG_GR * MAXON_MOTOR_ENC_TICKS
 
-// Ticks to speed (rad/s) coefficient 
-#define TICKS_TO_SPEED_COEF_LONG           2*PI_NUMBER / (MAXON_MOTOR_LONG_TOTAL_TICKS * MOTOR_CONTROL_PERIOD)
+// Ticks to rad coefficient 
+#define TICKS_TO_RAD_COEF_LONG                    2*PI_NUMBER / (MAXON_MOTOR_LONG_TOTAL_TICKS)
 
 //--------------------------------------------- Definitions and typedefs for robot movement --------------------//
 
-#define MOVEMENT_ANGULAR_ACCURACY          0.0087266f // 0.5°
-#define MOVEMENT_XY_ACCURACY               0.0005f    // 0.5 mm
-#define ODOMETRY_MOVEMENT_ACCELERATION_X   2.0f       // 2.0 m/s^2
-#define ODOMETRY_MOVEMENT_ACCELERATION_Y   2.0f       // 2.0 m/s^2
-#define ODOMETRY_MOVEMENT_ACCELERATION_W   6.0f       // 3 rad/s^2
+#define MOVEMENT_ANGULAR_ACCURACY                 0.0087266f // 0.5°
+#define MOVEMENT_XY_ACCURACY                      0.0005f    // 0.5 mm
+#define ODOMETRY_MOVEMENT_ACCELERATION_X          2.0f       // 2.0 m/s^2
+#define ODOMETRY_MOVEMENT_ACCELERATION_Y          2.0f       // 2.0 m/s^2
+#define ODOMETRY_MOVEMENT_ACCELERATION_W          6.0f       // 3 rad/s^2
+
+// If distance to move is smaller that this value it is extremly small distance
+#define ODOMETRY_MOVEMENT_SMALL_DIST_THRES        0.01f // 1 cm
+// For this distances 3 times more acceleration will be applied
+#define ODOMETRY_MOVEMENT_SMALL_DIST_ACCEl_FACTOR 3    // 3 times
 
 typedef enum
 {
@@ -73,14 +80,16 @@ typedef struct
 	int8_t                            direction[3];
 }OdometryMovementStruct;
 
-//--------------------------------------------- External variables ---------------------------------------------//
 typedef struct 
 {
 	uint8_t movingStatusFlag;
 	uint8_t forwardKinCalcStatusFlag;
 	uint8_t odometryMovingStatusFlag;
-	uint8_t startupInterruptStatusFlag;
+	uint8_t startupStatusFlag;
+	uint8_t collisionAvoidanceStatusFlag;
 }RobotStatus;
+
+//--------------------------------------------- External variables ---------------------------------------------//
 
 // For setMotorSpeed function
 extern TIM_PWM_Typedef motorPwmCh[4];
@@ -94,6 +103,7 @@ extern float MRotSpeed[ROBOT_NUMBER_OF_MOTORS][3];
 extern float InverseKinematics[3][ROBOT_NUMBER_OF_MOTORS];
 
 //--------------------------------------------- FUNCTIONS ------------------------------------------------------//
+void turnEverythingOff(void);
 
 //--------------------------------------------- Functions for acquiring odometry and navigation-----------------//
 

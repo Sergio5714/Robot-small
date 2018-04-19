@@ -4,6 +4,13 @@ Chosen_Motor_Typedef chosenShooter;
 
 Pid_Regulator_Struct_Typedef pidRegulator;
 
+uint32_t regulationStartTime;
+
+// Time of last odometry data acquisition (tenth of millisec)
+uint32_t timeofLastShooterMotorDataAcquisition;
+// Last time interval (sec)
+float lastTimeIntervalShooterMotorSec;
+
 void shooterChooseEnc(Chosen_Encoder_Typedef encoderNumber)
 {
 	switch(encoderNumber)
@@ -37,8 +44,16 @@ void shooterReadEnc()
 	encTicksBuf = *SHOOTER_ENCODER_CNT - ENCODER_CNT_INITIAL_VALUE;
 	*SHOOTER_ENCODER_CNT = ENCODER_CNT_INITIAL_VALUE;
 	
+	// Calculate time interval between current and last data acquisition
+	lastTimeIntervalShooterMotorSec = (float)(getTimeDifference(timeofLastShooterMotorDataAcquisition)) / 10000;
+	timeofLastShooterMotorDataAcquisition = getLocalTime();
+	
+	if (lastTimeIntervalShooterMotorSec == 0.0f)
+	{
+		return;
+	}
 	// Calculate speeds
-	shooterMotorSpeed = encTicksBuf * SHOOTER_TICKS_TO_SPEED_COEF;
+	shooterMotorSpeed = encTicksBuf * SHOOTER_TICKS_TO_RAD_COEF/ lastTimeIntervalShooterMotorSec;
 	
 	// Upload value to pid struct
 	pidRegulator.current = shooterMotorSpeed;
@@ -47,6 +62,24 @@ void shooterReadEnc()
 
 void shooterSetDutyCycle(Chosen_Motor_Typedef motorNumber, float dutyCycle)
 {
+	// Check speed
+	if (fabs(shooterMotorSpeed - pidRegulator.target) > SHOOTER_MOTOR_SPEED_EPS)
+	{
+		if (checkTimeout(regulationStartTime, SHOOTER_MOTOR_RESP_TIMEOUT_TENTH_OF_MILLIS))
+		{
+			// Turn off motor and regulation
+			timPwmChangeDutyCycle(SHOOTER_MOTOR_PWM_TIM_MODULE, motorNumber + 0x01, 0.0f);
+			pidRegulator.target = 0.0f;
+			pidRegulator.pidOn = 0x00;
+			pidRegulator.sumError = 0.0f;
+			return;
+		}
+	}
+	else
+	{
+		// Everythink is OK
+		regulationStartTime = getLocalTime();
+	}
 	timPwmChangeDutyCycle(SHOOTER_MOTOR_PWM_TIM_MODULE, motorNumber + 0x01, dutyCycle);
 	return;
 }

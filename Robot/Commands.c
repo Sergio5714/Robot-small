@@ -245,8 +245,34 @@ void checkCommandAndExecute()
 			// Check if there is no parameters
 			if (inputCommand.numberOfreceivedParams != 0x00)
 				break;
-			uint8_t buf = Robot.startupInterruptStatusFlag;
-			sendAnswer(inputCommand.command, (uint8_t*)&buf, 0x01);
+			// If startup flag has not been requested before check pin
+			if (!Robot.startupStatusFlag)
+			{
+				// Read level on startup pin
+				GPIO_Level_TypeDef level;
+				level = gpioPinReadInput(EXTI_STARTUP_PORT, EXTI_STARTUP_PIN);
+				if (level == GPIO_LEVEL_LOW)
+				{
+					// Match started
+					timeOfStart = getLocalTime();
+					Robot.startupStatusFlag = 0x01;
+				}
+			}
+			sendAnswer(inputCommand.command, (uint8_t*)&Robot.startupStatusFlag, 0x01);
+			break;
+		}
+		case FORCED_START:
+		{
+			// Check if there is no parameters
+			if (inputCommand.numberOfreceivedParams != 0x00)
+				break;
+			// If startup flag has not been requested before
+			if (!Robot.startupStatusFlag)
+			{
+				timeOfStart = getLocalTime();
+				Robot.startupStatusFlag = 0x01;
+			}
+			sendAnswer(inputCommand.command, (uint8_t*)&Robot.startupStatusFlag, 0x01);
 			break;
 		}
 		case TAKE_CUBE:
@@ -335,6 +361,35 @@ void checkCommandAndExecute()
 				break;
 			uint8_t number = inputCommand.params[0];
 			setManipHighLevelCommand(TAKE_LAST_CUBE_COMMAND, number, &cubeManipulators[number]);
+			// Send answer
+			uint8_t* answer = (uint8_t*)&"OK";
+			sendAnswer(inputCommand.command, answer, 0x02);
+			break;
+		}
+		case MAKE_FUNNY_ACTION:
+		{
+			// Check if no parameters  is received
+			if (inputCommand.numberOfreceivedParams != 0x01)
+				break;
+			uint8_t mode = inputCommand.params[0];
+			switch (mode)
+			{
+				case 0x00:
+				{
+					setSorterHighLevelCommand(CLOSE_ALL_FUNNY_ACTIONS, 0x00, &sorterManipulators[0]);
+					break;
+				}
+				case 0x01:
+				{
+					setSorterHighLevelCommand(OPEN_BUTTON_FUNNY_ACTION, 0x00, &sorterManipulators[0]);
+					break;
+				}
+				case 0x02:
+				{
+					setSorterHighLevelCommand(OPEN_LATCH, 0x00, &sorterManipulators[0]);
+					break;
+				}
+			}
 			// Send answer
 			uint8_t* answer = (uint8_t*)&"OK";
 			sendAnswer(inputCommand.command, answer, 0x02);
@@ -488,18 +543,59 @@ void checkCommandAndExecute()
 				shooterChooseEnc(CHOSEN_ENCODER_SECOND);
 				chosenShooter = CHOSEN_MOTOR_SECOND;
 			}
+			// Remember current time
+			regulationStartTime = getLocalTime();
 			// Choose mode
-			if (inputCommand.params[1] == 0x00)
+			switch(inputCommand.params[1])
 			{
-				// turn off motor
-				pidRegulator.target = 0.00;
-			}
-			else if (inputCommand.params[1] == 0x01)
-			{
-				// Set target speed
-				pidRegulator.target = SHOOTER_MOTOR_SPEED_TO_SHOOT;
-				// Turn on PID
-				pidRegulator.pidOn = 0x01;
+				case 0x00:
+				{
+					// turn off motor
+					pidRegulator.target = 0.00;
+					// Turn off PID
+					pidRegulator.pidOn = 0x00;
+					break;
+				}
+				case 0x01:
+				{
+					// Set target speed
+					switch(chosenShooter)
+					{
+						case CHOSEN_MOTOR_FIRST:
+						{
+							pidRegulator.target = SHOOTER_MOTOR_SPEED_TO_SHOOT_FIRST;
+							break;
+						}
+						case CHOSEN_MOTOR_SECOND:
+						{
+							pidRegulator.target = SHOOTER_MOTOR_SPEED_TO_SHOOT_SECOND;
+							break;
+						}
+					}
+					// Turn on PID
+					pidRegulator.pidOn = 0x01;
+					break;
+				}
+				case 0x02:
+				{
+					// Set target speed
+					switch(chosenShooter)
+					{
+						case CHOSEN_MOTOR_FIRST:
+						{
+							pidRegulator.target = SHOOTER_MOTOR_SPEED_TO_SHOOT_DIRTY_FIRST;
+							break;
+						}
+						case CHOSEN_MOTOR_SECOND:
+						{
+							pidRegulator.target = SHOOTER_MOTOR_SPEED_TO_SHOOT_DIRTY_SECOND;
+							break;
+						}
+					}
+					// Turn on PID
+					pidRegulator.pidOn = 0x01;
+					break;
+				}
 			}
 			// Send answer
 			uint8_t* answer = (uint8_t*)&"OK";
@@ -513,6 +609,43 @@ void checkCommandAndExecute()
 			float buf  = shooterMotorSpeed;
 			// send answer
 			sendAnswer(inputCommand.command, (uint8_t*)&buf, 0x04);
+			break;
+		}
+		case GET_DATA_AND_STATUS_FROM_RF:
+		{
+			// Check if no params are received
+			if (inputCommand.numberOfreceivedParams != 0x00)
+				break;
+			uint8_t i;
+			uint8_t buf[NUMBER_OF_RANGE_FINDERS * 2];
+			// Copy data from rangeFinders for collision avoidance
+			for (i = 0x00; i < RANGE_FINDER_NUMBER_OF_LAST_COL_AV_SENSOR + 0x01; i++)
+			{
+				buf[i] = rangeFinders.rangeValues[i];
+			}
+			// Copy status bytes
+			for (i = 0x00; i < NUMBER_OF_RANGE_FINDERS; i++)
+			{
+				buf[i + NUMBER_OF_RANGE_FINDERS] = rangeFinders.errorFlags[i];
+			}
+			// Send answer
+			sendAnswer(inputCommand.command, buf, NUMBER_OF_RANGE_FINDERS * 2);
+			break;
+		}
+		case TURN_COLL_AVOID_ON_OFF:
+		{
+			if (inputCommand.numberOfreceivedParams != 0x01)
+				break;
+			if (inputCommand.params[0] > 0x00)
+			{
+				Robot.collisionAvoidanceStatusFlag = 0x01;
+			}
+			else
+			{
+				Robot.collisionAvoidanceStatusFlag = 0x00;
+			}
+			uint8_t* answer = (uint8_t*)&"OK";
+			sendAnswer(inputCommand.command, answer, 0x02);
 			break;
 		}
 	}

@@ -5,33 +5,37 @@
 #include "stm32f407xx.h"
 #include "Board.h"
 
-#define PI_NUMBER                          3.14159265358f
+#define PI_NUMBER                                  3.14159265358f
 
 // Common robot parameters
-#define ROBOT_NUMBER_OF_SHOOTER_MOTORS     0x02
+#define ROBOT_NUMBER_OF_SHOOTER_MOTORS             0x02
 
 //--------------------------------------------- Definitions for motors -----------------------------------------//
 // Minimum and maximum speed of motor/wheel in rad/s 
-#define SHOOTER_MOTORS_MAX_ROT_SPEED       30.0f
-#define SHOOTER_MOTORS_MIN_ROT_SPEED       0.0f
-
-#define SHOOTER_MOTORS_MAX_ROT_SPEED       30.0f
-#define SHOOTER_MOTORS_MIN_ROT_SPEED       0.0f
+#define SHOOTER_MOTORS_MAX_ROT_SPEED               30.0f
+#define SHOOTER_MOTORS_MIN_ROT_SPEED               0.0f
 
 // Parameters of motors
 // Gear ratio
-#define SHOOTER_MOTOR_GR                   1.0f
+#define SHOOTER_MOTOR_GR                           1.0f
 
 // Encoder's ticks per one rotation of initial shaft
-#define SHOOTER_MOTOR_ENC_TICKS            64
+#define SHOOTER_MOTOR_ENC_TICKS                    64
 
 // Total number of ticks per one rotation
-#define SHOOTER_MOTOR_TOTAL_TICKS          SHOOTER_MOTOR_GR * SHOOTER_MOTOR_ENC_TICKS
+#define SHOOTER_MOTOR_TOTAL_TICKS                  SHOOTER_MOTOR_GR * SHOOTER_MOTOR_ENC_TICKS
 
-// Ticks to speed (rad/s) coefficient 
-#define SHOOTER_TICKS_TO_SPEED_COEF        2*PI_NUMBER / (SHOOTER_MOTOR_TOTAL_TICKS * MOTOR_CONTROL_PERIOD)
+// Ticks to rad coefficient 
+#define SHOOTER_TICKS_TO_RAD_COEF                  2*PI_NUMBER / (SHOOTER_MOTOR_TOTAL_TICKS)
 
-#define SHOOTER_MOTOR_SPEED_TO_SHOOT        280
+#define SHOOTER_MOTOR_SPEED_TO_SHOOT_FIRST         240
+#define SHOOTER_MOTOR_SPEED_TO_SHOOT_DIRTY_FIRST   105
+
+#define SHOOTER_MOTOR_SPEED_TO_SHOOT_SECOND        240
+#define SHOOTER_MOTOR_SPEED_TO_SHOOT_DIRTY_SECOND  105
+
+#define SHOOTER_MOTOR_SPEED_EPS                    30
+#define SHOOTER_MOTOR_RESP_TIMEOUT_TENTH_OF_MILLIS 20000 // 1 sec
 
 typedef enum
 {

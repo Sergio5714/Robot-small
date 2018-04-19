@@ -6,6 +6,7 @@
 
 #define NUMBER_OF_MANIPULATORS               0x01
 #define NUMBER_OF_SORTERS                    0x01
+#define MANIPULATOR_INIT_TIMEOUT_TENTH_OF_MS 0x4E20  // equals 2000  ms
 
 //--------------------------------------------- Typedefs and enums for tasks executor ---------------------------//
 
@@ -54,6 +55,8 @@ typedef enum
 	SUBTASK_BOTTOM_SORTER_RELEASE_RIGHT,
 	SUBTASK_OPEN_LATCH,
 	SUBTASK_CLOSE_LATCH,
+	SUBTASK_CLOSE_BUTTON_FUNNY_ACTION,
+	SUBTASK_OPEN_BUTTON_FUNNY_ACTION,
 	SUBTASK_SORTER_TERMINATOR
 } Sorter_Subtasks_Typedef;
 
@@ -62,7 +65,7 @@ typedef enum
 #define SERVO_CHECKER_ANGLE_EPS              1.0f
 #define SERVO_CHECKER_MAX_READ_REQUESTS      0x0A
 // Maximum timeout in ms
-#define SERVO_CHECKER_TIMEOUT_MS             0x5DC  // 1500 ms
+#define SERVO_CHECKER_TIMEOUT_TENTH_OF_MS    0x4650  // 1800 ms
 
 // Checker status
 typedef enum
@@ -161,6 +164,7 @@ typedef struct
 	Sorter_Typedef                 topSorter;
 	Sorter_Typedef                 bottomSorter;
 	Door_Typedef                   latch;
+	Door_Typedef                   buttonServo;
 	Sorter_Subtasks_Typedef*       tasksSequencePtr;
 	Tasks_Executor_Status          subtasksExecutorStatusFlag;
 } Sorter_Manipulator_Typedef;
@@ -180,6 +184,8 @@ typedef enum
 	BOTTOM_SORT_RELEASE_BALL_TO_LEFT,
 	OPEN_LATCH,
 	CLOSE_LATCH,
+	OPEN_BUTTON_FUNNY_ACTION,
+	CLOSE_ALL_FUNNY_ACTIONS,
 } Sorter_Command_Typedef;
 //--------------------------------------------- Macros for servos ------------------------------------------------//
 // FOR CUBE MANIPULATOR
@@ -206,6 +212,7 @@ typedef enum
 #define SORTER_SERVO_TOP_ID                       0x01  // 
 #define SORTER_SERVO_BOTTOM_ID                    0x03  // 
 #define SORTER_SERVO_LATCH_ID                     0x02  // 
+#define SORTER_SERVO_BUTTON_FUNNY_ID              0x0A  //
 
 // Boundary angles
 #define SORTER_SERVO_TOP_LEFT_POS                 0x00  // 0°
@@ -216,10 +223,12 @@ typedef enum
 #define SORTER_SERVO_BOTTOM_LEFT_POS              0xD5  // 213°
 #define SORTER_SERVO_BOTTOM_RIGHT_POS             0x53  // 83°
 #define SORTER_SERVO_BOTTOM_INTERM_POS            0x96  // 150°
-#define SORTER_SERVO_BOTTOM_RELEASE_RIGHT_POS     0x12C // 300°
-#define SORTER_SERVO_BOTTOM_RELEASE_LEFT_POS      0x00  // 0 °
+#define SORTER_SERVO_BOTTOM_RELEASE_RIGHT_POS     0x127 // 295°
+#define SORTER_SERVO_BOTTOM_RELEASE_LEFT_POS      0x05  // 5 °
 #define SORTER_SERVO_LATCH_OPENED_POS             0x50  // 80°
 #define SORTER_SERVO_LATCH_CLOSED_POS             0x96  // 150°
+#define SORTER_SERVO_BUTTON_FUNNY_CLOSED_POS      0x96  // 150°
+#define SORTER_SERVO_BUTTON_FUNNY_OPENED_POS      0xF0  // 240°
 
 //--------------------------------------------- FUNCTIONS ------------------------------------------------------//
 void initManipulators(void);

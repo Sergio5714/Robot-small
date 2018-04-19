@@ -48,6 +48,8 @@ Sorter_Subtasks_Typedef      bottomSorterReleaseToLeftTaskSeq[] = {SUBTASK_BOTTO
 Sorter_Subtasks_Typedef      bottomSorterReleaseToRightTaskSeq[] = {SUBTASK_BOTTOM_SORTER_RELEASE_RIGHT, SUBTASK_SORTER_TERMINATOR};
 Sorter_Subtasks_Typedef      openLatchTaskSeq[] = {SUBTASK_OPEN_LATCH, SUBTASK_SORTER_TERMINATOR};
 Sorter_Subtasks_Typedef      closeLatchTaskSeq[] = {SUBTASK_CLOSE_LATCH, SUBTASK_SORTER_TERMINATOR};
+Sorter_Subtasks_Typedef      openButtonFunnyActionTaskSeq[] = {SUBTASK_OPEN_BUTTON_FUNNY_ACTION, SUBTASK_SORTER_TERMINATOR};
+Sorter_Subtasks_Typedef      closeAllFunnnyActionsTaskSeq[] = {SUBTASK_CLOSE_LATCH, SUBTASK_CLOSE_BUTTON_FUNNY_ACTION, SUBTASK_SORTER_TERMINATOR};
 Sorter_Subtasks_Typedef      sorterTaskTerminator = SUBTASK_SORTER_TERMINATOR;
 
 // Timer interrupt handler for servoChecker
@@ -100,7 +102,23 @@ void initManipulators(void)
 	sorterManipulators[0].latch.id = SORTER_SERVO_LATCH_ID;
 	sorterManipulators[0].latch.openedAngle = SORTER_SERVO_LATCH_OPENED_POS;
 	sorterManipulators[0].latch.closedAngle = SORTER_SERVO_LATCH_CLOSED_POS;
+	sorterManipulators[0].buttonServo.id = SORTER_SERVO_BUTTON_FUNNY_ID;
+	sorterManipulators[0].buttonServo.openedAngle = SORTER_SERVO_BUTTON_FUNNY_OPENED_POS;
+	sorterManipulators[0].buttonServo.closedAngle = SORTER_SERVO_BUTTON_FUNNY_CLOSED_POS;
 	sorterManipulators[0].tasksSequencePtr = &sorterTaskTerminator;
+	
+	// Turn bottom sorter into start position
+	setSorterHighLevelCommand(BOTTOM_SORT_GO_TO_INTERM, 0x00, &sorterManipulators[0]);
+	
+	// Delay
+	delayInTenthOfMs(MANIPULATOR_INIT_TIMEOUT_TENTH_OF_MS);
+	
+	// Check status
+	if (sorterManipulators[0].subtasksExecutorStatusFlag != TASKS_EXECUTOR_SUCCESFUL_EXECUTION)
+	{
+		showError();
+	}
+	
 	return;
 }
 
@@ -150,7 +168,7 @@ void checkPosServo(Servo_Checker_Typedef* servoChecker)
 			servoChecker->statusFlag = SERVO_CHECKER_SUCCESFUL_CONFIRMATION;
 			return;
 		}
-		else if (checkTimeout(servoChecker->startTimeMillis, SERVO_CHECKER_TIMEOUT_MS))
+		else if (checkTimeout(servoChecker->startTimeMillis, SERVO_CHECKER_TIMEOUT_TENTH_OF_MS))
 		{
 			servoChecker->statusFlag = SERVO_CHECKER_ERROR_WRONG_POSITION;
 			return;
@@ -418,6 +436,14 @@ void execSorterSubtasks(uint8_t numberOfSorter, Sorter_Manipulator_Typedef* sort
 			servoId  = sorter->latch.id;
 			servoTargetPos = sorter->latch.closedAngle;
 			break;
+		case SUBTASK_OPEN_BUTTON_FUNNY_ACTION:
+			servoId  = sorter->buttonServo.id;
+			servoTargetPos = sorter->buttonServo.openedAngle;
+			break;
+		case SUBTASK_CLOSE_BUTTON_FUNNY_ACTION:
+			servoId  = sorter->buttonServo.id;
+			servoTargetPos = sorter->buttonServo.closedAngle;
+			break;
 		case SUBTASK_SORTER_TERMINATOR:
 			sorter->subtasksExecutorStatusFlag = TASKS_EXECUTOR_ERROR_TERMINATOR_REACHED;
 			return;
@@ -545,6 +571,12 @@ if (numberOfSorter > NUMBER_OF_MANIPULATORS)
 			break;
 		case CLOSE_LATCH:
 			sorter->tasksSequencePtr = closeLatchTaskSeq;
+			break;
+		case OPEN_BUTTON_FUNNY_ACTION:
+			sorter->tasksSequencePtr = openButtonFunnyActionTaskSeq;
+			break;
+		case CLOSE_ALL_FUNNY_ACTIONS:
+			sorter->tasksSequencePtr = closeAllFunnnyActionsTaskSeq;
 			break;
 	}
 	// Set flag for task sequence execution

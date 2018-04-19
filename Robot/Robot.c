@@ -27,6 +27,39 @@ float robotTargetMotorSpeedCs1[ROBOT_NUMBER_OF_MOTORS];
 float const accuracyOfMovement[3] = {MOVEMENT_XY_ACCURACY, MOVEMENT_XY_ACCURACY, MOVEMENT_ANGULAR_ACCURACY};
 float const accelerationMax[3] = {ODOMETRY_MOVEMENT_ACCELERATION_X, ODOMETRY_MOVEMENT_ACCELERATION_Y, ODOMETRY_MOVEMENT_ACCELERATION_W};
 
+// Time of last odometry data acquisition (tenth of millisec)
+uint32_t timeofLastOdometryDataAcquisition;
+// Last time interval (sec)
+float lastTimeIntervalSec;
+
+// Time of Robot start
+uint32_t timeOfStart;
+
+void turnEverythingOff()
+{
+	// Global disable of interrupts
+	
+	__disable_irq();
+	
+	// Turn off shooter motors
+	// Set low level on ch1
+	gpioPinSetLevel(SHOOTER_MOTOR_CH1_PWM_PORT, SHOOTER_MOTOR_CH1_PWM_PIN, GPIO_LEVEL_LOW);
+	// Set low level on ch2
+	gpioPinSetLevel(SHOOTER_MOTOR_CH2_PWM_PORT, SHOOTER_MOTOR_CH2_PWM_PIN, GPIO_LEVEL_LOW);
+	
+	// Turn off dynamixels
+	gpioPinSetLevel(SERVO_REBOOT_PORT, SERVO_REBOOT_PIN, GPIO_LEVEL_LOW);
+	
+	// Turn off maxons
+	uint8_t i;
+	for (i = 0x00; i < ROBOT_NUMBER_OF_MOTORS; i++)
+	{
+		// Change PWM
+		timPwmChangeDutyCycle(motorPwmCh[i].timModule, motorPwmCh[i].channel, 0.0f);
+	}
+	return;
+}
+
 //--------------------------------------------- Functions for acquiring odometry and navigation-----------------//
 
 // Calculate robot speed and coordinates in global coordinate system by using speeds in robot's coordinate system
@@ -43,9 +76,9 @@ void calcGlobSpeedAndCoord(void)
 	robotSpeedCsGlobal[2] = robotSpeedCs1[2];
 								  
 	// Coordinates' increment calculation
-	robotCoordCsGlobal[0] += robotSpeedCsGlobal[0] * MOTOR_CONTROL_PERIOD;
-	robotCoordCsGlobal[1] += robotSpeedCsGlobal[1] * MOTOR_CONTROL_PERIOD;
-	robotCoordCsGlobal[2] += robotSpeedCsGlobal[2] * MOTOR_CONTROL_PERIOD;
+	robotCoordCsGlobal[0] += robotSpeedCsGlobal[0] * lastTimeIntervalSec;
+	robotCoordCsGlobal[1] += robotSpeedCsGlobal[1] * lastTimeIntervalSec;
+	robotCoordCsGlobal[2] += robotSpeedCsGlobal[2] * lastTimeIntervalSec;
 	// Normalize angle of rotation
 	normalizeAngle(&robotCoordCsGlobal[2]);
 	return;
@@ -74,21 +107,33 @@ void readEnc(void)
 		*encCnt[i] = ENCODER_CNT_INITIAL_VALUE;
 	}
 	
+	// Calculate time interval between current and last data acquisition
+	lastTimeIntervalSec = (float)(getTimeDifference(timeofLastOdometryDataAcquisition)) / 10000;
+	timeofLastOdometryDataAcquisition = getLocalTime();
+	
+	// Check for appropriate values that can possibly cause Nan errors
+	if (lastTimeIntervalSec == 0.0f)
+	{
+		return;
+	}
+	
 	// Calculate speeds
 	for (i = 0x00; i < ROBOT_NUMBER_OF_MOTORS; i++)
 	{
 		// Actually now it is only motor's speed, but not wheel speed
-		wheelsSpeed[i] = encTicksBuf[i] * TICKS_TO_SPEED_COEF_LONG;
+		wheelsSpeed[i] = encTicksBuf[i] * TICKS_TO_RAD_COEF_LONG / (lastTimeIntervalSec);
 	}
 	#endif
+	
+	
 	
 	// Calculate inverse kinematics (wheelsSpeed -> robotSpeedCs1)
 	calcInverseKin();
 	
-	// Calculate instanteneous coordinates in robot cpprdinate system
+	// Calculate instanteneous coordinates in robot coordinate system
 	for (i = 0x00; i < 0x03; i++)
 	{
-		robotCoordCs1[i] += robotSpeedCs1[i] * MOTOR_CONTROL_PERIOD;
+		robotCoordCs1[i] += robotSpeedCs1[i] * lastTimeIntervalSec;
 	}
 	normalizeAngle(&robotCoordCs1[2]);
 	return;
@@ -410,7 +455,7 @@ void speedRecalculation(void)
 				break;
 			
 			case ODOMETRY_MOVEMENT_ACCELERATION:
-				robotTargetSpeedCs1[i] = robotTargetSpeedCs1[i] + OdometryMovement.acceleration[i] * MOTOR_CONTROL_PERIOD;
+				robotTargetSpeedCs1[i] = robotTargetSpeedCs1[i] + OdometryMovement.acceleration[i] * lastTimeIntervalSec;
 				// Constrain increase in speed if coordinate is still less than stopAccCoord[i]
 				if (fabs(robotTargetSpeedCs1[i]) > fabs(OdometryMovement.stableSpeed[i]))
 				{
@@ -430,22 +475,11 @@ void speedRecalculation(void)
 				{
 					robotTargetSpeedCs1[i] = OdometryMovement.finalSpeed[i];
 					OdometryMovement.odometryMovementStatusFlag[i] = ODOMETRY_MOVEMENT_NO_MOVEMENT;
-//					OdometryMovement.speedIncrement[i] = OdometryMovement.speedIncrement[i] / 2;
 				}
-				
-//				deltaCoord = (robotSpeedCs1[i] * robotSpeedCs1[i] - 
-//				OdometryMovement.finalSpeed[i] * OdometryMovement.finalSpeed[i]) / (2 * OdometryMovement.acceleration[i]);
-				
-				// Simple bang–bang controller
-//				if (fabs(OdometryMovement.robotTargetDistanceCs1[i] - robotCoordCs1[i]) - deltaCoord > accuracyOfMovement[i])
-//				{
-//					// We should increase speed a little bit
-//					robotTargetSpeedCs1[i] = robotTargetSpeedCs1[i] + OdometryMovement.speedIncrement[i] / 2;
-//				}
 				else
 				{
 					// Decrease speed
-					robotTargetSpeedCs1[i] = robotTargetSpeedCs1[i] - OdometryMovement.speedIncrement[i];
+					robotTargetSpeedCs1[i] = robotTargetSpeedCs1[i] - OdometryMovement.acceleration[i] * lastTimeIntervalSec;
 					break;
 				}
 		}
