@@ -410,6 +410,15 @@ void checkCommandAndExecute()
 				speed[i] = *(__packed float*)(inputCommand.params + 0x04*i + 0x0C);
 				acceleration[i] = accelerationMax[i];
 			}
+			// If distance is extremly small apply multiple factor for acceleration x and y
+			if (distance[0] <= ODOMETRY_MOVEMENT_SMALL_DIST_THRES)
+			{
+				acceleration[0] = ODOMETRY_MOVEMENT_SMALL_DIST_ACCEL_FACTOR * acceleration[0];
+			}
+			if (distance[1] <= ODOMETRY_MOVEMENT_SMALL_DIST_THRES)
+			{
+				acceleration[1] = ODOMETRY_MOVEMENT_SMALL_DIST_ACCEL_FACTOR * acceleration[1];
+			}
 			startMovementRobotCs1(&distance[0], &speed[0], &acceleration[0]);
 			// Send answer
 			uint8_t* answer = (uint8_t*)&"OK";
@@ -652,5 +661,6 @@ void checkCommandAndExecute()
 
 	// Command is already executed
 	inputCommand.status = 0x00;
+	inputCommand.command = 0x00;
 	return;
 }
