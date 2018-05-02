@@ -211,7 +211,7 @@ void checkCollisionAvoidance()
 	{
 		if (rangeFinders.rangeValues[i] < THRESHOLD_FOR_COLLISION_AVOIDANCE_MM)
 		{
-			if (Robot.odometryMovingStatusFlag)
+			if ((Robot.odometryMovingStatusFlag) || (Robot.forwardKinCalcStatusFlag))
 			{
 				// Check x
 				scalarProduct = sensorsCoordinateCollAvoid[i][0]*robotTargetSpeedCs1[0];
