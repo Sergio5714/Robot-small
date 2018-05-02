@@ -29,7 +29,8 @@ int main(void)
 	pidInit();
 	// Turn on Forward kinematics calculations and Collision avoidance 
 	Robot.forwardKinCalcStatusFlag = 0x01;
-	Robot.collisionAvoidanceStatusFlag = 0x01;
+	// Turn off collision avoidance
+	Robot.collisionAvoidanceStatusFlag = 0x00;
 	
 	while (1)
 	{

@@ -55,8 +55,8 @@
 
 // If distance to move is smaller that this value it is extremly small distance
 #define ODOMETRY_MOVEMENT_SMALL_DIST_THRES        0.01f // 1 cm
-// For this distances 3 times more acceleration will be applied
-#define ODOMETRY_MOVEMENT_SMALL_DIST_ACCEl_FACTOR 3    // 3 times
+// For this distances 1.5 times more acceleration will be applied
+#define ODOMETRY_MOVEMENT_SMALL_DIST_ACCEL_FACTOR 1.5f  // 1 times
 
 typedef enum
 {
@@ -78,6 +78,8 @@ typedef struct
 	float                             startDeccCoordinate[3];
 	float                             robotTargetDistanceCs1[3];
 	int8_t                            direction[3];
+	uint32_t                          startTime[3];
+	uint32_t                          durationOfMovement[3];
 }OdometryMovementStruct;
 
 typedef struct 
@@ -138,7 +140,7 @@ void setMotorSpeeds(void);
 void startCircularRotation( float radius, float arcLength, float linearSpeedAbs);
 
 // Start predefined movement to particular distance in robot's coordinate system
-// Input accelerations are coorected inside functions in order to syncronize acceleration and decceleration 
+// Input accelerations are corrected inside functions in order to syncronize acceleration and decceleration 
 void startMovementRobotCs1(float* distance, float* speedAbs, float accelerationAbs[3]);
 
 // Inner function for calculation of points of accelleration and decceleration

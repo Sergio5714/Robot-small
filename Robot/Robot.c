@@ -369,7 +369,9 @@ void startMovementRobotCs1(float* distance, float* speedAbs, float accelerationA
 			}
 			
 			// 5 Set current speeds 
-			OdometryMovement.initialSpeed[i] = robotSpeedCs1[i];
+			// For future
+			//OdometryMovement.initialSpeed[i] = robotSpeedCs1[i];
+			OdometryMovement.initialSpeed[i] = 0.0;
 			
 			// 6 Calculate speed increment after all direction are defined
 			OdometryMovement.speedIncrement[i] = OdometryMovement.acceleration[i] * MOTOR_CONTROL_PERIOD;
@@ -377,10 +379,12 @@ void startMovementRobotCs1(float* distance, float* speedAbs, float accelerationA
 			// 7 Calculation of essential parameters of the trajectory
 			calculateTrajectParameters(i, accelerationAbs);
 			
+			// 8 Remember start time of movement and set first stage (acceleration)
+			OdometryMovement.startTime[i] = getLocalTime();
 			OdometryMovement.odometryMovementStatusFlag[i] = ODOMETRY_MOVEMENT_ACCELERATION;
 		}
 	}
-	// 8 Set flag to make odometry movement
+	// 9 Set flag to make odometry movement
 	Robot.odometryMovingStatusFlag = 0x01;
 	return;
 }
@@ -400,6 +404,10 @@ void calculateTrajectParameters(uint8_t i, float* accelerationAbs)
 	// Point of trajectory to start decceleration
 	OdometryMovement.startDeccCoordinate[i] = OdometryMovement.robotTargetDistanceCs1[i] - deltaCoordDecc;
 	
+	// Calculate time duration of movement in tenth of milliseconds
+	OdometryMovement.durationOfMovement[i] = (uint32_t)((fabs(OdometryMovement.stableSpeed[i] - OdometryMovement.initialSpeed[i]) / accelerationAbs[i] +
+	                                         fabs(OdometryMovement.stableSpeed[i] - OdometryMovement.finalSpeed[i]) / accelerationAbs[i] +
+	                                         (fabs((OdometryMovement.startDeccCoordinate[i] - OdometryMovement.stopAccCoordinate[i]) / OdometryMovement.stableSpeed[i]))) * 10000);
 	
 	// If distance is too short, then correct stable speed
 	if (fabs(OdometryMovement.startDeccCoordinate[i]) < fabs(OdometryMovement.stopAccCoordinate[i]))
@@ -529,6 +537,15 @@ void checkIfPositionIsReachedCoord(uint8_t i, float* robotCoordBuf)
 {
 	if (OdometryMovement.odometryMovementStatusFlag[i] != ODOMETRY_MOVEMENT_NO_MOVEMENT)
 		{
+			// Check timeout for movement
+			if (checkTimeout(OdometryMovement.startTime[i], OdometryMovement.durationOfMovement[i]))
+			{
+				// Stop motors
+				robotTargetSpeedCs1[i] = 0.0;
+				OdometryMovement.odometryMovementStatusFlag[i] = ODOMETRY_MOVEMENT_NO_MOVEMENT;
+				return;
+			}
+			
 			// Check if we reached final position or not
 			if (fabs(OdometryMovement.robotTargetDistanceCs1[i] - robotCoordBuf[i]) < accuracyOfMovement[i])
 			{
