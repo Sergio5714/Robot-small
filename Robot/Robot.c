@@ -57,7 +57,10 @@ void turnEverythingOff()
 		// Change PWM
 		timPwmChangeDutyCycle(motorPwmCh[i].timModule, motorPwmCh[i].channel, 0.0f);
 	}
-	return;
+	while (1)
+	{
+		
+	}
 }
 
 //--------------------------------------------- Functions for acquiring odometry and navigation-----------------//
@@ -302,7 +305,7 @@ void startCircularRotation( float radius, float arcLength, float linearSpeedAbs)
 }
 
 // Start predefined movement to particular distance in robot's coordinate system
-// Input accelerations are coorected inside functions in order to syncronize acceleration and decceleration 
+// Input accelerations are corrected inside functions in order to syncronize acceleration and decceleration 
 void startMovementRobotCs1(float* distance, float* speedAbs, float accelerationAbs[3])
 {
 	// Counter
@@ -488,6 +491,11 @@ void speedRecalculation(void)
 				{
 					// Decrease speed
 					robotTargetSpeedCs1[i] = robotTargetSpeedCs1[i] - OdometryMovement.acceleration[i] * lastTimeIntervalSec;
+					// Check if we decreased speed too much
+					if (robotTargetSpeedCs1[i] * OdometryMovement.direction[i] < 0.0f)
+					{
+						robotTargetSpeedCs1[i] = OdometryMovement.finalSpeed[i];
+					}
 					break;
 				}
 		}

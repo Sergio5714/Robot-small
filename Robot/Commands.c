@@ -226,20 +226,6 @@ void checkCommandAndExecute()
 			sendAnswer(inputCommand.command, (uint8_t*)&buf, 0x01);
 			break;
 		}
-		case GET_MANIPULATOR_STATUS :
-		{
-			// Check if number of manipulator is received
-			if (inputCommand.numberOfreceivedParams != 0x01)
-				break;
-			uint8_t number = inputCommand.params[0];
-			// Check if number of manipulator is right
-			if (number > NUMBER_OF_MANIPULATORS - 0x01)
-				return;
-			uint8_t buf = cubeManipulators[number].subtasksExecutorStatusFlag; 
-			// Send status of manipulator
-			sendAnswer(inputCommand.command, (uint8_t*)&buf, 0x01);
-			break;
-		}
 		case GET_STARTUP_STATUS:
 		{
 			// Check if there is no parameters
@@ -275,97 +261,6 @@ void checkCommandAndExecute()
 			sendAnswer(inputCommand.command, (uint8_t*)&Robot.startupStatusFlag, 0x01);
 			break;
 		}
-		case TAKE_CUBE:
-		{
-			// Check if manipulator's id is received
-			if (inputCommand.numberOfreceivedParams != 0x01)
-				break;
-			uint8_t number = inputCommand.params[0];
-			setManipHighLevelCommand(TAKE_CUBE_COMMAND, number, &cubeManipulators[number]);
-			// Send answer
-			uint8_t* answer = (uint8_t*)&"OK";
-			sendAnswer(inputCommand.command, answer, 0x02);
-			break;
-		}
-		case UNLOAD_TOWER:
-		{
-			// Check if manipulator's id is received
-			if (inputCommand.numberOfreceivedParams != 0x01)
-				break;
-			uint8_t number = inputCommand.params[0];
-			setManipHighLevelCommand(UNLOAD_TOWER_COMMAND, number, &cubeManipulators[number]);
-			// Send answer
-			uint8_t* answer = (uint8_t*)&"OK";
-			sendAnswer(inputCommand.command, answer, 0x02);
-			break;
-		}
-		case OPEN_CLOSE_DOOR:
-		{
-			// Check if manipulator's id and desired door state (0 or 1) is received
-			if (inputCommand.numberOfreceivedParams != 0x02)
-				break;
-			uint8_t number = inputCommand.params[0];
-			if (number == 0x01)
-			{
-				// Second manipulator has no door
-				return;
-			}
-			// Read state
-			uint8_t state = inputCommand.params[1];
-			if (state)
-			{
-				setManipHighLevelCommand(OPEN_DOOR_COMMAND, number, &cubeManipulators[number]);
-			}
-			else
-			{
-				setManipHighLevelCommand(CLOSE_DOOR_COMMAND, number, &cubeManipulators[number]);
-			}
-			// Send answer
-			uint8_t* answer = (uint8_t*)&"OK";
-			sendAnswer(inputCommand.command, answer, 0x02);
-			break;
-		}
-		case LIFT_MANIPULATOR_TO_INTERM:
-		{
-			// Check if manipulator's number  is received
-			if (inputCommand.numberOfreceivedParams != 0x01)
-				break;
-			uint8_t number = inputCommand.params[0];
-			setManipHighLevelCommand(LIFT_TO_INTERMEDIATE_POS_COMMAND, number, &cubeManipulators[number]);
-			// Send answer
-			uint8_t* answer = (uint8_t*)&"OK";
-			sendAnswer(inputCommand.command, answer, 0x02);
-			break;
-		}
-		case RELEASE_MAGIC_CUBE:
-		{
-			// Check if manipulator's number  is received
-			if (inputCommand.numberOfreceivedParams != 0x01)
-				break;
-			uint8_t number = inputCommand.params[0];
-			if (number == 0x01)
-			{
-				// Second manipulator has no magic cube
-				return;
-			}
-			setManipHighLevelCommand(RELEASE_MAGIC_CUBE_COMMAND, number, &cubeManipulators[number]);
-			// Send answer
-			uint8_t* answer = (uint8_t*)&"OK";
-			sendAnswer(inputCommand.command, answer, 0x02);
-			break;
-		}
-		case TAKE_LAST_CUBE:
-		{
-			// Check if manipulator's number  is received
-			if (inputCommand.numberOfreceivedParams != 0x01)
-				break;
-			uint8_t number = inputCommand.params[0];
-			setManipHighLevelCommand(TAKE_LAST_CUBE_COMMAND, number, &cubeManipulators[number]);
-			// Send answer
-			uint8_t* answer = (uint8_t*)&"OK";
-			sendAnswer(inputCommand.command, answer, 0x02);
-			break;
-		}
 		case MAKE_FUNNY_ACTION:
 		{
 			// Check if no parameters  is received
@@ -380,11 +275,6 @@ void checkCommandAndExecute()
 					break;
 				}
 				case 0x01:
-				{
-					setSorterHighLevelCommand(OPEN_BUTTON_FUNNY_ACTION, 0x00, &sorterManipulators[0]);
-					break;
-				}
-				case 0x02:
 				{
 					setSorterHighLevelCommand(OPEN_LATCH, 0x00, &sorterManipulators[0]);
 					break;
@@ -419,7 +309,11 @@ void checkCommandAndExecute()
 			{
 				acceleration[1] = ODOMETRY_MOVEMENT_SMALL_DIST_ACCEL_FACTOR * acceleration[1];
 			}
-			startMovementRobotCs1(&distance[0], &speed[0], &acceleration[0]);
+			// If odometry movement flag is empty
+			if (!Robot.odometryMovingStatusFlag)
+			{
+				startMovementRobotCs1(&distance[0], &speed[0], &acceleration[0]);
+			}
 			// Send answer
 			uint8_t* answer = (uint8_t*)&"OK";
 			sendAnswer(inputCommand.command, answer, 0x02);
@@ -454,41 +348,29 @@ void checkCommandAndExecute()
 			sendAnswer(inputCommand.command, answer, 0x02);
 			break;
 		}
-		case MOVE_TOP_SORTER:
+		case MOVE_HEAP_GRIPPER:
 		{
-			// Check if number of position is received
+			// Check if mode is received
 			if (inputCommand.numberOfreceivedParams != 0x01)
 				break;
-			uint8_t numberOfPos = inputCommand.params[0];
-			switch(numberOfPos)
+			uint8_t mode = inputCommand.params[0];
+			switch(mode)
 			{
 				case 0x00:
 				{
-					setSorterHighLevelCommand(TOP_SORT_GOOD_BALL, 0x00, &sorterManipulators[0]);
+					setSorterHighLevelCommand(CLOSE_HEAP_GRIPPER, 0x00, &sorterManipulators[0]);
 					break;
 				}
 				case 0x01:
 				{
-					setSorterHighLevelCommand(TOP_SORT_BAD_BALL, 0x00, &sorterManipulators[0]);
+					setSorterHighLevelCommand(FIX_HEAP_GRIPPER, 0x00, &sorterManipulators[0]);
 					break;
 				}
 				case 0x02:
 				{
-					setSorterHighLevelCommand(TOP_SORT_GO_TO_INTERM, 0x00, &sorterManipulators[0]);
+					setSorterHighLevelCommand(OPEN_HEAP_GRIPPER, 0x00, &sorterManipulators[0]);
 					break;
 				}
-				case 0x03:
-				{
-					setSorterHighLevelCommand(TOP_SORT_GO_TO_INTERM_GOOD, 0x00, &sorterManipulators[0]);
-					break;
-				}
-				case 0x04:
-				{
-					setSorterHighLevelCommand(TOP_SORT_GO_TO_INTERM_BAD, 0x00, &sorterManipulators[0]);
-					break;
-				}
-				default:
-				break;
 			}
 			// Send answer
 			uint8_t* answer = (uint8_t*)&"OK";

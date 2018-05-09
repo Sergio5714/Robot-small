@@ -4,9 +4,8 @@
 #include "Dynamixel_control.h"
 #include "stm32f4xx.h"
 
-#define NUMBER_OF_MANIPULATORS               0x01
 #define NUMBER_OF_SORTERS                    0x01
-#define MANIPULATOR_INIT_TIMEOUT_TENTH_OF_MS 0x4E20  // equals 2000  ms
+#define MANIPULATOR_INIT_TIMEOUT_TENTH_OF_MS 0xEA60  // equals 6000  ms
 
 //--------------------------------------------- Typedefs and enums for tasks executor ---------------------------//
 
@@ -23,31 +22,10 @@ typedef enum
 	TASKS_EXECUTOR_ERROR_TERMINATOR_REACHED,
 } Tasks_Executor_Status;
 
-// Enumeration for possible subtasks (manipulator)
-typedef enum
-{
-	// For cube manipulator
-	SUBTASK_OPEN_MANIPULATOR,
-	SUBTASK_CLOSE_MANIPULATOR,
-	SUBTASK_LOWER_MANIPULATOR,
-	SUBTASK_LIFT_MANIPULATOR,
-	SUBTASK_LIFT_MANIPULATOR_INTERM,
-	SUBTASK_OPEN_DOOR,
-	SUBTASK_CLOSE_DOOR,
-	SUBTASK_PUSH_MAGIC_CUBE,
-	SUBTASK_RETURN_MAGIC_CUBE,
-	SUBTASK_TERMINATOR
-} Manipulator_Subtasks_Typedef;
-
 // Enumeration for possible subtasks(sorter)
 typedef enum
 {
 	// For ball's sorter
-	SUBTASK_TOP_SORTER_SORT_BAD_BALL,
-	SUBTASK_TOP_SORTER_SORT_GOOD_BALL,
-	SUBTASK_TOP_SORTER_GO_TO_INTERM_POS,
-	SUBTASK_TOP_SORTER_GO_TO_INTERM_GOOD_POS,
-	SUBTASK_TOP_SORTER_GO_TO_INTERM_BAD_POS,
 	SUBTASK_BOTTOM_SORTER_SORT_TO_RIGHT,
 	SUBTASK_BOTTOM_SORTER_SORT_TO_LEFT,
 	SUBTASK_BOTTOM_SORTER_GO_TO_INTERM_POS,
@@ -55,8 +33,13 @@ typedef enum
 	SUBTASK_BOTTOM_SORTER_RELEASE_RIGHT,
 	SUBTASK_OPEN_LATCH,
 	SUBTASK_CLOSE_LATCH,
-	SUBTASK_CLOSE_BUTTON_FUNNY_ACTION,
-	SUBTASK_OPEN_BUTTON_FUNNY_ACTION,
+	SUBTASK_MOVE_LATCH_HEAP_GRIPPER,
+	SUBTASK_OPEN_HEAP_GRIPPER_RIGHT,
+	SUBTASK_FIX_HEAP_GRIPPER_RIGHT,
+	SUBTASK_CLOSE_HEAP_GRIPPER_RIGHT,
+	SUBTASK_OPEN_HEAP_GRIPPER_LEFT,
+	SUBTASK_FIX_HEAP_GRIPPER_LEFT,
+	SUBTASK_CLOSE_HEAP_GRIPPER_LEFT,
 	SUBTASK_SORTER_TERMINATOR
 } Sorter_Subtasks_Typedef;
 
@@ -82,71 +65,23 @@ typedef enum
 typedef struct
 {
 	uint8_t                 servoId;
-	uint32_t                startTimeMillis;
+	uint32_t                startTime;
 	float                   targetPos;
 	float                   previousPos;
 	Checker_Status_Typedef  statusFlag;
 } Servo_Checker_Typedef;
 
-//--------------------------------------------- Typedefs for manipulator control --------------------------------//
-
-// Struct for gripper's parameters
-typedef struct
-{
-	uint8_t id;
-	uint16_t openedAngle;
-	uint16_t closedAngle;
-} Gripper_Typedef;
-
-// Struct for magic cube's parameters
-typedef struct
-{
-	uint8_t id;
-	uint16_t initialPosition;
-	uint16_t finalPosition;
-} Magic_Cube_Typedef;
-
-// Struct for sliders's parameters
-typedef struct
-{
-	uint8_t id;
-	uint16_t topPos;
-	uint16_t botPos;
-	uint16_t intermPos;
-} Slider_Typedef;
+//--------------------------------------------- Typedefs for sorter control -------------------------------------//
 
 // Struct for door's parameters
 typedef struct
 {
 	uint8_t id;
 	uint16_t openedAngle;
+	uint16_t slightlyOpenedAngle;
 	uint16_t closedAngle;
 } Door_Typedef;
 
-// Struct for cube manipulators's parameters
-typedef struct
-{
-	Gripper_Typedef               gripper;
-	Slider_Typedef                slider;
-	Door_Typedef                  door;
-	Magic_Cube_Typedef            magicCube;
-	Manipulator_Subtasks_Typedef* tasksSequencePtr;
-	Tasks_Executor_Status         subtasksExecutorStatusFlag;
-	
-} Cube_Manipulator_Typedef;
-
-// Manipulator's commands
-typedef enum
-{
-	TAKE_CUBE_COMMAND,
-	TAKE_LAST_CUBE_COMMAND,
-	UNLOAD_TOWER_COMMAND,
-	LIFT_TO_INTERMEDIATE_POS_COMMAND,
-	OPEN_DOOR_COMMAND,
-	CLOSE_DOOR_COMMAND,
-	RELEASE_MAGIC_CUBE_COMMAND,
-} Manipulator_Command_Typedef;
-//--------------------------------------------- Typedefs for sorter control -------------------------------------//
 // Struct for top or bottom sorter's parameters
 typedef struct
 {
@@ -161,10 +96,11 @@ typedef struct
 // Struct for cube ball sorter's parameters
 typedef struct
 {
-	Sorter_Typedef                 topSorter;
+
 	Sorter_Typedef                 bottomSorter;
 	Door_Typedef                   latch;
-	Door_Typedef                   buttonServo;
+	Door_Typedef                   heapGripperRight;
+	Door_Typedef                   heapGripperLeft;
 	Sorter_Subtasks_Typedef*       tasksSequencePtr;
 	Tasks_Executor_Status          subtasksExecutorStatusFlag;
 } Sorter_Manipulator_Typedef;
@@ -172,11 +108,6 @@ typedef struct
 // Sorter's commands
 typedef enum
 {
-	TOP_SORT_BAD_BALL,
-	TOP_SORT_GOOD_BALL,
-	TOP_SORT_GO_TO_INTERM,
-	TOP_SORT_GO_TO_INTERM_BAD,
-	TOP_SORT_GO_TO_INTERM_GOOD,
 	BOTTOM_SORT_BALL_TO_RIGHT,
 	BOTTOM_SORT_BALL_TO_LEFT,
 	BOTTOM_SORT_GO_TO_INTERM,
@@ -184,51 +115,36 @@ typedef enum
 	BOTTOM_SORT_RELEASE_BALL_TO_LEFT,
 	OPEN_LATCH,
 	CLOSE_LATCH,
-	OPEN_BUTTON_FUNNY_ACTION,
 	CLOSE_ALL_FUNNY_ACTIONS,
+	CLOSE_HEAP_GRIPPER,
+	OPEN_HEAP_GRIPPER,
+	FIX_HEAP_GRIPPER,
+	INIT_MANIPULATOR,
 } Sorter_Command_Typedef;
 //--------------------------------------------- Macros for servos ------------------------------------------------//
-// FOR CUBE MANIPULATOR
-// ID of servo motors
-
-#define MANIP_LEFT_SERVO_SLIDER_ID                0x00  // id = 2
-#define MANIP_LEFT_SERVO_GRIPPER_ID               0x11  // id = 17
-#define MANIP_LEFT_SERVO_MAGIC_CUBE_ID            0x15  // id = 21
-#define MANIP_LEFT_SERVO_DOOR_ID                  0x0B  // id = 11
-
-// Boundary angles
-
-#define MANIP_LEFT_SERVO_SLIDER_TOP_POS           0x11D // TBD!!!
-#define MANIP_LEFT_SERVO_SLIDER_BOT_POS           0x14  // TBD!!!
-#define MANIP_LEFT_SERVO_SLIDER_INTERM_POS        0x3C  // TBD!!!
-#define MANIP_LEFT_SERVO_GRIPPER_OPENED_POS       0x69  // TBD!!!
-#define MANIP_LEFT_SERVO_GRIPPER_CLOSED_POS       0xF5  // TBD!!!
-#define MANIP_LEFT_SERVO_MAGIC_CUBE_INITIAL_POS   0x46  // TBD!!!
-#define MANIP_LEFT_SERVO_MAGIC_CUBE_FINAL_POS     0x00  // TBD!!!
-#define MANIP_LEFT_SERVO_DOOR_OPENED_POS          0x46  // TBD!!!
-#define MANIP_LEFT_SERVO_DOOR_CLOSED_POS          0x93  // TBD!!!
 
 // FOR SORTER
-#define SORTER_SERVO_TOP_ID                       0x01  // 
-#define SORTER_SERVO_BOTTOM_ID                    0x03  // 
-#define SORTER_SERVO_LATCH_ID                     0x02  // 
-#define SORTER_SERVO_BUTTON_FUNNY_ID              0x0A  //
+#define SORTER_SERVO_TOP_ID                         0x01  // 
+#define SORTER_SERVO_BOTTOM_ID                      0x03  // 
+#define SORTER_SERVO_LATCH_ID                       0x04  // 
+#define SORTER_SERVO_HEAP_GRIPPER_RIGHT_ID          0x05  // 
+#define SORTER_SERVO_HEAP_GRIPPER_LEFT_ID           0x06  // 
 
 // Boundary angles
-#define SORTER_SERVO_TOP_LEFT_POS                 0x00  // 0°
-#define SORTER_SERVO_TOP_RIGHT_POS                0xF5  // 245°
-#define SORTER_SERVO_TOP_INTERM_POS               0x96  // 150°
-#define SORTER_SERVO_TOP_INTERM_LEFT_POS          0x8C  // 140°
-#define SORTER_SERVO_TOP_INTERM_RIGHT_POS         0xA5  // 165°
-#define SORTER_SERVO_BOTTOM_LEFT_POS              0x12C // 300°
-#define SORTER_SERVO_BOTTOM_RIGHT_POS             0xBE  // 190°
-#define SORTER_SERVO_BOTTOM_INTERM_POS            0xFA  // 250°
-#define SORTER_SERVO_BOTTOM_RELEASE_RIGHT_POS     0x2D  // 45°
-#define SORTER_SERVO_BOTTOM_RELEASE_LEFT_POS      0x64  // 100°
-#define SORTER_SERVO_LATCH_OPENED_POS             0x50  // 80°
-#define SORTER_SERVO_LATCH_CLOSED_POS             0x96  // 150°
-#define SORTER_SERVO_BUTTON_FUNNY_CLOSED_POS      0x96  // 150°
-#define SORTER_SERVO_BUTTON_FUNNY_OPENED_POS      0xF0  // 240°
+#define SORTER_SERVO_BOTTOM_LEFT_POS                0x12C // 300°
+#define SORTER_SERVO_BOTTOM_RIGHT_POS               0xBE  // 190°
+#define SORTER_SERVO_BOTTOM_INTERM_POS              0xFA  // 250°
+#define SORTER_SERVO_BOTTOM_RELEASE_RIGHT_POS       0x27  // 39°
+#define SORTER_SERVO_BOTTOM_RELEASE_LEFT_POS        0x69  // 105°
+#define SORTER_SERVO_LATCH_OPENED_POS               0x45  // 69°
+#define SORTER_SERVO_LATCH_CLOSED_POS               0x8C  // 140°
+#define SORTER_SERVO_LATCH_HEAP_GRIPPER_POS         0x0E  // 15°
+#define SORTER_SERVO_HEAP_GRIPPER_RIGHT_OPENED_POS  0x82  // 130°
+#define SORTER_SERVO_HEAP_GRIPPER_RIGHT_FIXED_POS   0x9B  // 155° 
+#define SORTER_SERVO_HEAP_GRIPPER_RIGHT_CLOSED_POS  0xF5  // 245°
+#define SORTER_SERVO_HEAP_GRIPPER_LEFT_OPENED_POS   0xAA  // 170°
+#define SORTER_SERVO_HEAP_GRIPPER_LEFT_FIXED_POS    0x91  // 145°
+#define SORTER_SERVO_HEAP_GRIPPER_LEFT_CLOSED_POS   0x46  // 70°
 
 //--------------------------------------------- FUNCTIONS ------------------------------------------------------//
 void initManipulators(void);
@@ -240,15 +156,10 @@ void checkPosServo(Servo_Checker_Typedef* servoChecker);
 void resetChecker(Servo_Checker_Typedef* servoChecker);
 
 //--------------------------------------------- Tasks executor's functions -------------------------------------//
-// For cube manipulators
-void execManipTasks(uint8_t numberOfmanipulator, Cube_Manipulator_Typedef* manipulator);
-void execManipSubtasks(uint8_t numberOfManipulator, Cube_Manipulator_Typedef* manipulator);
-
 // For sorter
 void execSorterTasks(uint8_t numberOfsorter, Sorter_Manipulator_Typedef* sorter);
 void execSorterSubtasks(uint8_t numberOfsorter, Sorter_Manipulator_Typedef* sorter);
 
 //--------------------------------------------- High-level command assignment ----------------------------------//
-void setManipHighLevelCommand(Manipulator_Command_Typedef command, uint8_t numberOfManipulator, Cube_Manipulator_Typedef* manipulator);
 void setSorterHighLevelCommand(Sorter_Command_Typedef command, uint8_t numberOfSorter, Sorter_Manipulator_Typedef* sorters);
 #endif

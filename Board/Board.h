@@ -206,6 +206,16 @@
 #define DYNAMIXEL_SIGNAL_EN_PIN          GPIO_Pin_12
 #define DYNAMIXEL_SIGNAL_EN_PORT         GPIOB
 
+//--------------------------------------------- Pin for expander reset ---------------------------------------------------------//
+
+#define EXPANDER_RESET_PIN               GPIO_Pin_0
+#define EXPANDER_RESET_PORT              GPIOD
+
+//--------------------------------------------- Pin for expander power reset ---------------------------------------------------//
+
+#define I2C_POWER_RESET_PIN              GPIO_Pin_3
+#define I2C_POWER_RESET_PORT             GPIOD
+
 
 // Initialize all necessary peripheral devices
 void boardInitAll(void);

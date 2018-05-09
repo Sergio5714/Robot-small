@@ -75,7 +75,7 @@ void I2CReset(I2C_Module_With_State_Typedef* I2Cx)
 	// Init
 	I2CInit(I2Cx);
 	
-	// Remeber time of last reset
+	// Remember time of last reset
 	I2Cx->timeOfLastI2CResetMillis = getLocalTime();
 	
 	// Enable

@@ -17,23 +17,23 @@ ErrorStatus initRangeFindersGlobally(void)
 	if (initExpanderOutputMode(EXPANDER_RESET_I2C_ADDRESS) != SUCCESS)
 	{
 		// Error arised
-		rangeFinders.outputExpander = EXPANDER_ERROR;
+		rangeFinders.outputExpanderErrorFlag = EXPANDER_ERROR;
 		// Clear low level error flag
 		I2CModule.status = I2C_ACTIVE_MODE;
 		// Indicate error
 		showError();
 		return ERROR;
 	}
-	if (initExpanderInterruptMode(EXPANDER_INTERRUPT_I2C_ADDRESS) != SUCCESS)
-	{
-		// Error arised
-		rangeFinders.interruptExpander = EXPANDER_ERROR;
-		// Clear low level error flag
-		I2CModule.status = I2C_ACTIVE_MODE;
-		// Indicate error
-		showError();
-		return ERROR;
-	}
+//	if (initExpanderInterruptMode(EXPANDER_INTERRUPT_I2C_ADDRESS) != SUCCESS)
+//	{
+//		// Error arised
+//		rangeFinders.interruptExpander = EXPANDER_ERROR;
+//		// Clear low level error flag
+//		I2CModule.status = I2C_ACTIVE_MODE;
+//		// Indicate error
+//		showError();
+//		return ERROR;
+//	}
 	// Initialize rangefinders
 	uint8_t i;
 	for(i = 0x00; i < NUMBER_OF_RANGE_FINDERS; i++)
@@ -146,6 +146,17 @@ void checkRangeFindersReinitFlags(void)
 {
 	uint8_t i;
 	uint8_t sum = 0x00;
+	
+	// Check if power is under reset or not
+	if (checkTimeout(I2CModule.timeOfLastI2CResetMillis, EXPANDER_POWER_RESET_DELAY)
+		&& rangeFinders.powerResetStatusFlag)
+	{
+		powerTurnOnExpander();
+		rangeFinders.powerResetStatusFlag = 0x00;
+		return;
+	}
+	
+	// Check timeout after I2C reset
 	if (checkTimeout(I2CModule.timeOfLastI2CResetMillis, I2C_TIMEOUT_AFTER_RESET_TENTH_OF_MS))
 	{
 		// Check if all rangefinders should be reinitialized at the same time
@@ -153,21 +164,51 @@ void checkRangeFindersReinitFlags(void)
 		{
 			sum += rangeFinders.reinitFlags[i];
 		}
-		// If all rangefinders should be reinitialized then there is an error with bus
-		if (sum == NUMBER_OF_RANGE_FINDERS)
+		sum += rangeFinders.outputExpanderErrorFlag;
+		// If all rangefinders + expander should be reinitialized then there is an error with bus
+		if (sum == NUMBER_OF_RANGE_FINDERS + 0x01)
 		{
 			// Reset I2C bus
 			I2CReset(&I2CModule);
+			
+			// Turn off power of expander and raise a flag
+			powerTurnOffExpander();
+			rangeFinders.powerResetStatusFlag = 0x01;
+		
 			// Clear Reinit flags
 			for(i = 0x00; i < NUMBER_OF_RANGE_FINDERS; i++)
 			{
 				rangeFinders.reinitFlags[i] = RANGE_FINDER_NO_NEED_TO_REINIT;
 			}
+			rangeFinders.outputExpanderErrorFlag = EXPANDER_NO_ERROR;
+			
 			// Indicate no error
 			showNoError();
 		}
 		else
 		{
+			// Check if Expander was under reset or not
+			rangeFinders.outputExpanderErrorFlag = checkExpander();
+			// Reinit expander if it is necessary
+			if (rangeFinders.outputExpanderErrorFlag == EXPANDER_ERROR)
+			{
+				if (initExpanderOutputMode(EXPANDER_RESET_I2C_ADDRESS) != SUCCESS)
+				{
+					// Error arised
+					rangeFinders.outputExpanderErrorFlag = EXPANDER_ERROR;
+					I2CModule.status = I2C_ACTIVE_MODE;
+					// Indicate error
+					showError();
+				}
+				else
+				{
+					rangeFinders.outputExpanderErrorFlag = EXPANDER_NO_ERROR;
+					// Indicate no error
+					showNoError();
+				}
+				return;
+				
+			}
 			// Initialize "stopped" rangefinders
 			for(i = 0x00; i < NUMBER_OF_RANGE_FINDERS; i++)
 			{
@@ -294,6 +335,8 @@ ErrorStatus initRangeFinder(uint8_t numberOfSensor)
 	// Reset sensor
 	if (resetRangeFinder(numberOfSensor) != SUCCESS)
 	{
+		// Error of output Expander arised
+		rangeFinders.outputExpanderErrorFlag = EXPANDER_ERROR;
 		return ERROR;
 	}
 	// Initialization
@@ -322,9 +365,54 @@ ErrorStatus initRangeFinder(uint8_t numberOfSensor)
 	return SUCCESS;
 }
 //--------------------------------------------- Middle level functions -----------------------------------------//
+
+// Reset expander
+void resetExpander()
+{
+	// Reset expander (Low logic level)
+	gpioPinSetLevel(EXPANDER_RESET_PORT, EXPANDER_RESET_PIN, GPIO_LEVEL_LOW);
+	delayInTenthOfMs(EXPANDER_RESET_DELAY_TENTH_OF_MS);
+	// Turn on expander (High logic level)
+	gpioPinSetLevel(EXPANDER_RESET_PORT, EXPANDER_RESET_PIN, GPIO_LEVEL_HIGH);
+	delayInTenthOfMs(EXPANDER_BOOT_DELAY_TENTH_OF_MS);
+	return;
+}
+
+// I2C Power turn off
+void powerTurnOffExpander()
+{
+	gpioPinSetLevel(I2C_POWER_RESET_PORT, I2C_POWER_RESET_PIN, GPIO_LEVEL_HIGH);
+	return;
+}
+
+// I2C Power turn on
+void powerTurnOnExpander()
+{
+	gpioPinSetLevel(I2C_POWER_RESET_PORT, I2C_POWER_RESET_PIN, GPIO_LEVEL_LOW);
+	return;
+}
+
+// Check expander (if it was under reset or not)
+Expander_Errors_Typedef checkExpander(void)
+{
+	uint8_t expanderConfigRegValue;
+	// Read value
+	if (expanderReadReg(EXPANDER_CONFIG_REG, &expanderConfigRegValue, EXPANDER_RESET_I2C_ADDRESS) != SUCCESS)
+	{
+		return EXPANDER_CONNECTION_ERROR;
+	}
+	if (expanderConfigRegValue != EXPANDER_CONFIG_REG_CHECK_VALUE)
+	{
+		return EXPANDER_ERROR;
+	}
+	// Everything is OK
+	return EXPANDER_NO_ERROR;
+}
+
 // Initialize expander in output mode
 ErrorStatus initExpanderOutputMode(uint8_t expanderAddr)
 {
+	resetExpander();
 	// Setup config register for right mapping of ports
 	if (expanderWriteReg(EXPANDER_CONFIG_REG_DEFAULT, 0xA2, expanderAddr) != SUCCESS)
 	{
@@ -356,6 +444,7 @@ ErrorStatus initExpanderOutputMode(uint8_t expanderAddr)
 // Initialize expander in input (interrupt) mode
 ErrorStatus initExpanderInterruptMode(uint8_t expanderAddr)
 {
+	resetExpander();
 	// Setup config register for right mapping of ports
 	if (expanderWriteReg(EXPANDER_CONFIG_REG_DEFAULT, 0xA2, expanderAddr) != SUCCESS)
 	{

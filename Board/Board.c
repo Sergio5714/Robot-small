@@ -241,6 +241,16 @@ void boardInitAll()
 	gpioInitPin(DYNAMIXEL_SIGNAL_EN_PORT, DYNAMIXEL_SIGNAL_EN_PIN, GPIO_MODE_OUT, GPIO_OUTPUT_MODE_OD, GPIO_PUPD_UP);
 	gpioPinSetLevel(DYNAMIXEL_SIGNAL_EN_PORT, DYNAMIXEL_SIGNAL_EN_PIN, GPIO_LEVEL_HIGH);
 	
+	//--------------------------------------------- Enable pin for expander reset --------------------------------//
+	
+	gpioInitPin(EXPANDER_RESET_PORT, EXPANDER_RESET_PIN, GPIO_MODE_OUT, GPIO_OUTPUT_MODE_OD, GPIO_PUPD_UP);
+	gpioPinSetLevel(EXPANDER_RESET_PORT, EXPANDER_RESET_PIN, GPIO_LEVEL_HIGH);
+	
+	//--------------------------------------------- Enable pin for Expander power reset --------------------------//
+	
+	gpioInitPin(I2C_POWER_RESET_PORT, I2C_POWER_RESET_PIN, GPIO_MODE_OUT, GPIO_OUTPUT_MODE_OD, GPIO_PUPD_UP);
+	gpioPinSetLevel(I2C_POWER_RESET_PORT, I2C_POWER_RESET_PIN, GPIO_LEVEL_LOW);
+	
 	//--------------------------------------------- Enable modules -----------------------------------------------//
 	
 	// Enable USART modules
