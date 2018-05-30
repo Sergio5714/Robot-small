@@ -13,8 +13,8 @@
 
 #define RANGE_FINDER_NUMBER_OF_LAST_COL_AV_SENSOR    0x07 // Number of last sensor for collision avoidance
 
-#define NUMBER_OF_RANGE_FINDERS                      0x08
-#define NUMBER_OF_RANGE_FINDERS_FOR_CALIBR           0x00
+#define NUMBER_OF_RANGE_FINDERS                      0x09
+#define NUMBER_OF_RANGE_FINDERS_FOR_CALIBR           0x01
 #define NUMBER_OF_RANGE_FINDERS_FOR_COLL_AVOID       0x08
 
 #define THRESHOLD_FOR_COLLISION_AVOIDANCE_MM         0x96 // 150
@@ -76,7 +76,7 @@ typedef enum
 typedef struct
 {
 	uint8_t rangeValues[NUMBER_OF_RANGE_FINDERS];
-	//uint8_t dataForCalibration[NUMBER_OF_RANGE_FINDERS_FOR_CALIBR];
+	uint8_t dataForCalibration[NUMBER_OF_RANGE_FINDERS_FOR_CALIBR];
 	Range_Finder_Errors_Typedef errorFlags[NUMBER_OF_RANGE_FINDERS];
 	Range_Finders_Reinit_flag_Typedef reinitFlags[NUMBER_OF_RANGE_FINDERS];
 	Expander_Errors_Typedef outputExpanderErrorFlag;
@@ -103,7 +103,7 @@ void checkRangeFindersReinitFlags(void);
 void checkCollisionAvoidance(void);
 
 // Make postprocessing of data from rangefinders for calibration
-//void postprocessDataForCalibration(void);
+void postprocessDataForCalibration(void);
 
 // Reset particular rangefinder
 ErrorStatus resetRangeFinder(uint8_t numberOfSensor);

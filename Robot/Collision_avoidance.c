@@ -7,6 +7,11 @@ extern RobotStatus Robot;
 
 Range_Finders_Struct_Typedef rangeFinders;
 
+// Levels of measurements for calibration
+uint8_t lowLevelValueToCompare[NUMBER_OF_RANGE_FINDERS_FOR_CALIBR] = {0x00};
+uint8_t highLevelValueToCompare[NUMBER_OF_RANGE_FINDERS_FOR_CALIBR] = {0x28};
+//                                                                     0-40
+
 // Coordinate of sensor's vectors (x and y)
 float sensorsCoordinateCollAvoid[NUMBER_OF_RANGE_FINDERS_FOR_COLL_AVOID][2] = {{0.0f, 1.0f}, {MAGIC_VALUE, MAGIC_VALUE}, {1.0f, 0.0f}, {MAGIC_VALUE, -MAGIC_VALUE},
                                                                                {0.0f, -1.0f}, {-MAGIC_VALUE, -MAGIC_VALUE}, {-1.0f, 0.0f}, {-MAGIC_VALUE, MAGIC_VALUE}};
@@ -172,8 +177,8 @@ void checkRangeFindersReinitFlags(void)
 			I2CReset(&I2CModule);
 			
 			// Turn off power of expander and raise a flag
-			powerTurnOffExpander();
-			rangeFinders.powerResetStatusFlag = 0x01;
+			//powerTurnOffExpander();
+			//rangeFinders.powerResetStatusFlag = 0x01;
 		
 			// Clear Reinit flags
 			for(i = 0x00; i < NUMBER_OF_RANGE_FINDERS; i++)
@@ -292,23 +297,23 @@ void checkCollisionAvoidance()
 }
 
 // Make postprocessing of data from rangefinders for calibration
-//void postprocessDataForCalibration(void)
-//{
-//	uint8_t i;
-//	for ( i = 0x00; i < NUMBER_OF_RANGE_FINDERS_FOR_CALIBR; i++)
-//	{
-//		if ( (rangeFinders.rangeValues[RANGE_FINDER_NUMBER_OF_LAST_COL_AV_SENSOR + 0x01 + i] > lowLevelValueToCompare[i])
-//			 && (rangeFinders.rangeValues[RANGE_FINDER_NUMBER_OF_LAST_COL_AV_SENSOR + 0x01 + i] < highLevelValueToCompare[i]))
-//		{
-//			rangeFinders.dataForCalibration[i] = 0x01;
-//		}
-//		else
-//		{
-//			rangeFinders.dataForCalibration[i] = 0x00;
-//		}
-//	}
-//	return;
-//}
+void postprocessDataForCalibration(void)
+{
+	uint8_t i;
+	for ( i = 0x00; i < NUMBER_OF_RANGE_FINDERS_FOR_CALIBR; i++)
+	{
+		if ( (rangeFinders.rangeValues[RANGE_FINDER_NUMBER_OF_LAST_COL_AV_SENSOR + 0x01 + i] > lowLevelValueToCompare[i])
+			 && (rangeFinders.rangeValues[RANGE_FINDER_NUMBER_OF_LAST_COL_AV_SENSOR + 0x01 + i] < highLevelValueToCompare[i]))
+		{
+			rangeFinders.dataForCalibration[i] = 0x01;
+		}
+		else
+		{
+			rangeFinders.dataForCalibration[i] = 0x00;
+		}
+	}
+	return;
+}
 
 // Reset particular rangefinder
 ErrorStatus resetRangeFinder(uint8_t numberOfSensor)

@@ -514,6 +514,11 @@ void checkCommandAndExecute()
 			{
 				buf[i] = rangeFinders.rangeValues[i];
 			}
+			// Copy data from rangefinders from calibration
+			for (i = 0x00; i < NUMBER_OF_RANGE_FINDERS_FOR_CALIBR; i++)
+			{
+				buf[i + RANGE_FINDER_NUMBER_OF_LAST_COL_AV_SENSOR + 0x01] = rangeFinders.dataForCalibration[i];
+			}
 			// Copy status bytes
 			for (i = 0x00; i < NUMBER_OF_RANGE_FINDERS; i++)
 			{

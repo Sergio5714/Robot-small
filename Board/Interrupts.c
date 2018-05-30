@@ -166,7 +166,7 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
 		{
 			// Acquire rangefinder's measurements
 			readRangesGlobally();
-			//postprocessDataForCalibration();
+			postprocessDataForCalibration();
 			// Check if initialization is needed
 			checkRangeFindersReinitFlags();
 		}
