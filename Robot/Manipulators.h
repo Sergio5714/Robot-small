@@ -133,9 +133,10 @@ typedef enum
 // Boundary angles
 #define SORTER_SERVO_BOTTOM_LEFT_POS                0x12C // 300°
 #define SORTER_SERVO_BOTTOM_RIGHT_POS               0xBE  // 190°
-#define SORTER_SERVO_BOTTOM_INTERM_POS              0xFA  // 250°
-#define SORTER_SERVO_BOTTOM_RELEASE_RIGHT_POS       0x27  // 39°
-#define SORTER_SERVO_BOTTOM_RELEASE_LEFT_POS        0x69  // 105°
+#define SORTER_SERVO_BOTTOM_INTERM_POS              0xFF  // 255°
+#define SORTER_SERVO_BOTTOM_RELEASE_RIGHT_POS       0x21
+// 33°
+#define SORTER_SERVO_BOTTOM_RELEASE_LEFT_POS        0x78  // 120°
 #define SORTER_SERVO_LATCH_OPENED_POS               0x45  // 69°
 #define SORTER_SERVO_LATCH_CLOSED_POS               0x8C  // 140°
 #define SORTER_SERVO_LATCH_HEAP_GRIPPER_POS         0x0E  // 15°
